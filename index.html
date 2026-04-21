@@ -60,13 +60,17 @@
     <div class="header-bg">
         <div class="header-image-container relative">
             
-            <img src="https://raw.githubusercontent.com/weich754/hokkadio-trip0425/main/banner.jpg" 
-                 onerror="this.src='https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop'; this.onerror=null;"
-                 class="absolute inset-0 w-full h-full object-cover">
+            <input type="file" id="coverInput" accept="image/*" class="hidden" @change="handleCoverUpload">
+            
+            <img :src="coverImage" class="absolute inset-0 w-full h-full object-cover">
                  
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-20 pointer-events-none"></div>
             
-            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg">
+            <button @click="triggerCoverUpload" class="absolute top-4 left-4 z-30 bg-black/40 hover:bg-black/60 text-white border border-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-lg flex items-center gap-1">
+                <i class="fa-solid fa-camera"></i> 更換封面
+            </button>
+
+            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg z-30">
                 <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
                 <span>{{ isConnected ? '已連線同步中' : '雙人同步' }}</span>
             </div>
@@ -120,7 +124,7 @@
             </div>
 
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-2">
-                <p class="text-xs font-bold text-slate-500 mb-3 text-center">【 方案 B：手動代碼傳送 】</p>
+                <p class="text-xs font-bold text-slate-500 mb-3 text-center">【 方案 B：手掌握代碼傳送 】</p>
                 <div class="flex gap-2 mb-3">
                     <button @click="generateCode" class="flex-1 py-2.5 rounded-xl bg-green-500 text-white font-bold text-xs shadow-md hover:bg-green-600 transition-all flex justify-center items-center gap-1">
                         <i class="fa-solid fa-copy"></i> 複製行程
@@ -302,6 +306,38 @@ createApp({
         const editingIdx = ref(null);
         const activeUploadIdx = ref(null);
         
+        // 封面圖片邏輯
+        const coverImage = ref('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/800px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg');
+        
+        const triggerCoverUpload = () => {
+            document.getElementById('coverInput').click();
+        };
+
+        const handleCoverUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1200, MAX_HEIGHT = 800; 
+                    let width = img.width, height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                    coverImage.value = base64Str;
+                    localStorage.setItem('hokkaido_trip_v19_cover', base64Str);
+                    event.target.value = ''; 
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
         // MQTT 連線變數
         const showSyncModal = ref(false);
         const isConnected = ref(false);
@@ -337,4 +373,267 @@ createApp({
                 { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
                 { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
                 { time: '13:00', category: 'food', name: '中餐：菠蘿麵包', note: '世界第二好吃菠蘿麵包' },
-                {
+                { time: '14:00', category: 'sightseeing', name: '八板山 / 函館公園🌸', note: '紅磚倉庫散步' },
+                { time: '17:00', category: 'sightseeing', name: '函館山夜景 🌛', note: 'KKDAY 買票 (看 Live Cam)' },
+                { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
+                { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
+            ],
+            [ // 4/27
+                { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
+                { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
+                { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
+                { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
+                { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
+            ],
+            [ // 4/28
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
+                { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
+                { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'accommodation', name: '湖の栖 (Check in)', note: '洞爺湖散步' },
+                { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
+                { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
+            ],
+            [ // 4/29
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
+                { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
+                { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
+                { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 4/30
+                { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
+                { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
+                { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
+                { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
+                { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
+            ],
+            [ // 5/1
+                { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
+                { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
+                { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
+                { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
+            ],
+            [ // 5/2
+                { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
+                { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
+                { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 5/3
+                { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
+                { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
+                { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
+            ]
+        ];
+
+        const itineraryData = ref(JSON.parse(JSON.stringify(defaultItinerary)));
+        const shoppingItems = ref([{ text: "六花亭萊姆餅乾", image: null }, { text: "白色戀人", image: null }, { text: "藥妝補貨", image: null }, { text: "Max Valu 零食", image: null }]);
+        const foodRefs = ref({
+            "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
+            "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
+            "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵や 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
+            "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
+        });
+
+        const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
+        const currentDayItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
+
+        const handleAddClick = () => { isEditMode.value = false; newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' }; showModal.value = true; };
+        const editItem = (item, idx) => { isEditMode.value = true; editingIdx.value = idx; newItem.value = { ...item }; showModal.value = true; };
+        const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
+        const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
+        
+        // 修正 Google Maps URL Bug
+        const openMap = (q) => { 
+            if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); 
+        };
+
+        const addFoodItem = (category) => { const res = prompt(`請輸入要新增至【${category}】的項目：`); if (res && res.trim() !== '') foodRefs.value[category].push(res.trim()); };
+        const removeFoodItem = (category, idx) => { if (confirm('確定要刪除這個口袋名單嗎？')) foodRefs.value[category].splice(idx, 1); };
+        const addShoppingItem = () => { const res = prompt("請輸入爆買項目名稱："); if (res && res.trim() !== '') shoppingItems.value.push({ text: res.trim(), image: null }); };
+        const removeShoppingItem = (idx) => { if (confirm('確定要刪除這個購物項目嗎？')) shoppingItems.value.splice(idx, 1); };
+        const triggerCamera = (idx) => { activeUploadIdx.value = idx; document.getElementById('cameraInput').click(); };
+        const removeImage = (idx) => { shoppingItems.value[idx].image = null; };
+
+        const handleImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500, MAX_HEIGHT = 500;
+                    let width = img.width, height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    if (activeUploadIdx.value !== null) { shoppingItems.value[activeUploadIdx.value].image = canvas.toDataURL('image/jpeg', 0.7); }
+                    event.target.value = ''; 
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
+        const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
+
+        // 氣候大數據模擬
+        const currentWeather = computed(() => {
+            const mockData = {
+                '函館': [
+                    { maxT: 14, minT: 5, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗舒適' }, 
+                    { maxT: 15, minT: 6, pop: 20, icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '晴時多雲' }, 
+                    { maxT: 13, minT: 5, pop: 40, icon: 'fa-cloud', color: 'text-slate-400', desc: '多雲' } 
+                ],
+                '洞爺湖': [
+                    { maxT: 12, minT: 4, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗偏涼' } 
+                ],
+                '札幌': [
+                    { maxT: 16, minT: 7, pop: 15, icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '溫和多雲' }, 
+                    { maxT: 18, minT: 8, pop: 0, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗溫暖' }, 
+                    { maxT: 17, minT: 8, pop: 30, icon: 'fa-cloud', color: 'text-slate-400', desc: '多雲' }, 
+                    { maxT: 15, minT: 6, pop: 60, icon: 'fa-cloud-rain', color: 'text-blue-400', desc: '短暫陣雨' }, 
+                    { maxT: 16, minT: 7, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗' } 
+                ]
+            };
+
+            let data;
+            if (selectedDateIndex.value <= 2) {
+                data = { ...mockData['函館'][selectedDateIndex.value], location: '函館市' };
+            } else if (selectedDateIndex.value === 3) {
+                data = { ...mockData['洞爺湖'][0], location: '洞爺湖町' };
+            } else {
+                data = { ...mockData['札幌'][selectedDateIndex.value - 4], location: '札幌市' };
+            }
+            return data;
+        });
+
+        // === 方案 A：MQTT 即時連線 ===
+        const connectToRoom = () => {
+            if (isConnected.value) return;
+            syncStatusMsg.value = '連線中...';
+            
+            try {
+                mqttClient = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt', { connectTimeout: 5000, reconnectPeriod: 5000 });
+                mqttClient.on('connect', () => {
+                    isConnected.value = true;
+                    syncStatusMsg.value = `✅ 已連線`;
+                    mqttClient.subscribe('hokkaido_app_041887');
+                    setTimeout(() => { showSyncModal.value = false; }, 1000);
+                });
+
+                mqttClient.on('message', (topic, message) => {
+                    try {
+                        const data = JSON.parse(message.toString());
+                        isReceivingUpdate = true;
+                        if (data.i) itineraryData.value = data.i;
+                        if (data.f) foodRefs.value = data.f;
+                        if (data.s) {
+                            shoppingItems.value = data.s.map((item, i) => {
+                                const currentImage = shoppingItems.value[i] ? shoppingItems.value[i].image : null;
+                                return { text: item.t, image: currentImage };
+                            });
+                        }
+                        setTimeout(() => { isReceivingUpdate = false; }, 800);
+                    } catch (e) {}
+                });
+
+                mqttClient.on('error', () => { isConnected.value = false; syncStatusMsg.value = '❌ 連線受阻'; });
+                mqttClient.on('offline', () => { isConnected.value = false; syncStatusMsg.value = '⚠️ 網路不穩斷線中'; });
+            } catch (e) { syncStatusMsg.value = '❌ 系統錯誤'; }
+        };
+
+        const disconnectRoom = () => {
+            if (mqttClient) { mqttClient.end(); isConnected.value = false; syncStatusMsg.value = ''; }
+        };
+
+        const forcePush = () => {
+            if (isConnected.value && mqttClient) {
+                const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+                mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
+                syncStatusMsg.value = '✅ 已強制推播！';
+                setTimeout(() => { showSyncModal.value = false; }, 1000);
+            }
+        };
+
+        // === 方案 B：離線文字代碼 ===
+        const generateCode = () => {
+            const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+            try {
+                const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(safePayload));
+                generatedCode.value = compressed;
+                navigator.clipboard.writeText(compressed).then(() => {
+                    manualSyncMsg.value = '✅ 已複製！請傳給阿鈺';
+                    setTimeout(() => { manualSyncMsg.value = ''; }, 3000);
+                }).catch(() => {
+                    document.getElementById('hiddenCodeBox').classList.remove('hidden');
+                    document.getElementById('hiddenCodeBox').select();
+                    manualSyncMsg.value = '請手動拷貝上方框內代碼';
+                });
+            } catch(e) {}
+        };
+
+        const importData = () => {
+            if(!importCode.value) return;
+            try {
+                const decompressed = LZString.decompressFromEncodedURIComponent(importCode.value.trim());
+                if (!decompressed) throw new Error("Invalid Code");
+                const data = JSON.parse(decompressed);
+                if (data.i) itineraryData.value = data.i;
+                if (data.f) foodRefs.value = data.f;
+                if (data.s) shoppingItems.value = data.s.map((item, i) => ({ text: item.t, image: (shoppingItems.value[i] ? shoppingItems.value[i].image : null) }));
+                manualSyncMsg.value = '✅ 手動更新成功！';
+                importCode.value = '';
+                setTimeout(() => { showSyncModal.value = false; manualSyncMsg.value = ''; }, 1500);
+            } catch(e) { manualSyncMsg.value = '❌ 代碼錯誤，請確認'; }
+        };
+
+        // 初始化
+        onMounted(() => {
+            try {
+                const savedI = localStorage.getItem('hokkaido_trip_v19_itinerary');
+                if (savedI) itineraryData.value = JSON.parse(savedI);
+                const savedF = localStorage.getItem('hokkaido_trip_v19_foodRefs');
+                if (savedF) foodRefs.value = JSON.parse(savedF);
+                const savedS = localStorage.getItem('hokkaido_trip_v19_shopping');
+                if (savedS) shoppingItems.value = JSON.parse(savedS);
+                
+                // 讀取自訂封面
+                const savedCover = localStorage.getItem('hokkaido_trip_v19_cover');
+                if (savedCover) coverImage.value = savedCover;
+            } catch(e) {}
+        });
+
+        // 監聽變更
+        watch([itineraryData, shoppingItems, foodRefs], () => {
+            localStorage.setItem('hokkaido_trip_v19_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v19_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v19_foodRefs', JSON.stringify(foodRefs.value));
+
+            if (isConnected.value && mqttClient && !isReceivingUpdate) {
+                const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+                mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
+            }
+        }, { deep: true });
+
+        return { 
+            currentTab, selectedDateIndex, dates, itineraryData, foodRefs, shoppingItems, 
+            currentDayItinerary, showModal, newItem, isEditMode, 
+            handleAddClick, editItem, saveItem, removeItem, openMap, 
+            addFoodItem, removeFoodItem, addShoppingItem, removeShoppingItem, 
+            triggerCamera, handleImageUpload, removeImage,
+            getCategoryColor, getCategoryIcon,
+            showSyncModal, isConnected, syncStatusMsg, manualSyncMsg,
+            connectToRoom, disconnectRoom, forcePush,
+            generatedCode, importCode, generateCode, importData,
+            currentWeather,
+            coverImage, triggerCoverUpload, handleCoverUpload
+        }
+    }
+}).mount('#app')
+</script>
+</body>
+</html>
