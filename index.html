@@ -45,7 +45,7 @@
         .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
-        .sync-badge { position: absolute; top: 16px; right: 16px; z-index: 40; background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.2); }
+        .sync-badge { position: absolute; top: 16px; right: 16px; z-index: 40; background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; transition: all 0.2s; }
         .sync-badge:hover { background: rgba(216, 27, 96, 0.8); transform: scale(1.05); }
     </style>
 </head>
@@ -59,7 +59,7 @@
             
             <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg">
                 <i class="fa-solid fa-cloud" :class="{'animate-pulse text-green-300': isSyncing}"></i>
-                <span v-if="syncId">雙人連線中</span>
+                <span v-if="syncId">已連線</span>
                 <span v-else>未連線</span>
             </div>
 
@@ -76,55 +76,48 @@
     </div>
 
     <div v-if="showSyncModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative overflow-hidden">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
             <button @click="showSyncModal = false" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h3 class="font-bold text-lg mb-5 text-center text-slate-800"><i class="fa-solid fa-cloud text-hokkaido-blue mr-2"></i>雙人行程同步</h3>
+            <h3 class="font-bold text-lg mb-5 text-center text-slate-800"><i class="fa-solid fa-cloud text-hokkaido-blue mr-2"></i>雲端共用設定</h3>
             
             <div v-if="syncId" class="space-y-4 text-center">
-                <div class="bg-green-50 text-green-600 p-4 rounded-xl text-sm font-bold border border-green-100 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-check"></i> 雲端即時同步已開啟
+                <div class="bg-green-50 text-green-600 p-4 rounded-xl text-sm font-bold border border-green-100">
+                    目前已開啟即時同步
                 </div>
-                <div class="text-xs text-slate-500">請讓阿鈺在她的手機輸入此代碼：</div>
-                <div class="flex items-center justify-center gap-2 bg-slate-100 p-3 rounded-xl border border-slate-200">
-                    <span class="font-mono text-xl tracking-widest font-bold text-slate-800 break-all select-all">{{ syncId }}</span>
+                <div class="text-xs text-slate-500">請將下方代碼複製給阿鈺，讓她輸入即可一起編輯行程：</div>
+                <div class="flex items-center justify-center gap-2 bg-slate-100 p-3 rounded-xl">
+                    <span class="font-mono text-xl tracking-widest font-bold text-slate-800">{{ syncId }}</span>
                 </div>
                 <div class="flex gap-2 mt-4">
-                    <button @click="forceSyncDownload" class="flex-1 py-3 rounded-xl bg-hokkaido-blue text-white font-bold text-sm shadow-md hover:bg-blue-500"><i class="fa-solid fa-rotate mr-1"></i> 手動更新</button>
+                    <button @click="forceSyncDownload" class="flex-1 py-3 rounded-xl bg-hokkaido-blue text-white font-bold text-sm shadow-md hover:bg-blue-500"><i class="fa-solid fa-download mr-1"></i> 強制下載</button>
                     <button @click="disconnectSync" class="flex-1 py-3 rounded-xl bg-red-50 text-red-500 font-bold text-sm hover:bg-red-100">斷開連線</button>
                 </div>
             </div>
 
             <div v-else class="space-y-5">
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                    <p class="text-xs text-slate-500 mb-3">建立專屬房間，與阿鈺一起隨時更新行程與爆買清單。</p>
-                    <button @click="generateSyncCode" :disabled="isGenerating" class="w-full py-3 rounded-xl bg-sakura-dark text-white font-bold text-sm shadow-md hover:bg-pink-600 transition-all disabled:opacity-50">
+                    <p class="text-xs text-slate-500 mb-3">想要與阿鈺一起編輯行程嗎？建立專屬房間，所有變更將自動同步。</p>
+                    <button @click="generateSyncCode" :disabled="isGenerating" class="w-full py-3 rounded-xl bg-sakura-dark text-white font-bold text-sm shadow-md hover:bg-pink-600 disabled:opacity-50">
                         <i v-if="isGenerating" class="fa-solid fa-spinner fa-spin mr-1"></i>
-                        <span v-else>建立專屬同步房間</span>
+                        <span v-else>建立同步房號</span>
                     </button>
                 </div>
 
                 <div class="relative flex items-center py-2">
                     <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold">或輸入現有房號</span>
+                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold">或</span>
                     <div class="flex-grow border-t border-slate-200"></div>
                 </div>
 
                 <div class="space-y-3">
-                    <input v-model="inputSyncId" type="text" placeholder="貼上阿鈺給的代碼" class="w-full bg-slate-50 rounded-xl p-3 text-center text-sm font-mono outline-none border border-slate-200 focus:border-sakura-pink">
-                    <button @click="joinSyncCode" :disabled="!inputSyncId" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold text-sm shadow-md disabled:opacity-50">加入房間</button>
+                    <p class="text-xs text-slate-500 text-center">阿鈺已經有代碼了嗎？在下方輸入：</p>
+                    <input v-model="inputSyncId" type="text" placeholder="輸入 6 碼或 8 碼同步代碼" class="w-full bg-slate-50 rounded-xl p-3 text-center text-sm font-mono tracking-widest outline-none border border-slate-200 focus:border-sakura-pink">
+                    <button @click="joinSyncCode" :disabled="!inputSyncId" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold text-sm shadow-md disabled:opacity-50">加入同步</button>
                 </div>
             </div>
             
-            <div v-if="syncMessage" class="mt-4 text-center text-xs font-bold px-2 py-1 rounded" :class="syncMessage.includes('失敗') || syncMessage.includes('無效') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-hokkaido-blue'">
+            <div v-if="syncMessage" class="mt-4 text-center text-xs font-bold" :class="syncMessage.includes('失敗') || syncMessage.includes('無效') ? 'text-red-500' : 'text-hokkaido-blue'">
                 {{ syncMessage }}
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-100 text-center">
-                <p class="text-[10px] text-slate-400 mb-2">網路不穩？使用離線文字傳送 (B計畫)</p>
-                <div class="flex gap-2">
-                    <button @click="exportOfflineCode" class="flex-1 py-2 bg-slate-100 text-slate-600 text-xs rounded-lg font-bold hover:bg-slate-200">複製全部行程</button>
-                    <button @click="importOfflineCode" class="flex-1 py-2 bg-slate-100 text-slate-600 text-xs rounded-lg font-bold hover:bg-slate-200">貼上行程代碼</button>
-                </div>
             </div>
         </div>
     </div>
@@ -265,6 +258,7 @@
 const { createApp, ref, computed, watch, onMounted } = Vue
 createApp({
     setup() {
+        // --- 介面控制變數 ---
         const currentTab = ref('itinerary');
         const selectedDateIndex = ref(0);
         const showModal = ref(false);
@@ -279,6 +273,7 @@ createApp({
         const isGenerating = ref(false);
         const isSyncing = ref(false);
         const syncMessage = ref('');
+        // 防止初次載入就觸發上傳
         let isInitialLoad = true; 
         
         const dates = [
@@ -289,7 +284,7 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
-        // 完整預設資料
+        // 完整 V5 預設資料
         const defaultItinerary = [
             [ // 4/25
                 { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
@@ -375,6 +370,7 @@ createApp({
         const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
         const currentDayItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
 
+        // --- 核心邏輯 (與 V5 相同) ---
         const handleAddClick = () => { isEditMode.value = false; newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' }; showModal.value = true; };
         const editItem = (item, idx) => { isEditMode.value = true; editingIdx.value = idx; newItem.value = { ...item }; showModal.value = true; };
         const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
@@ -403,15 +399,15 @@ createApp({
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400; // 壓縮得更小一點，確保雲端傳輸順暢
-                    const MAX_HEIGHT = 400;
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 500;
                     let width = img.width, height = img.height;
                     if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
                     else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6); // 高度壓縮以利雲端傳輸
                     if (activeUploadIdx.value !== null) { shoppingItems.value[activeUploadIdx.value].image = compressedDataUrl; }
                     event.target.value = ''; 
                 };
@@ -423,7 +419,7 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        // --- 全新更穩定的雲端核心 (JSONBlob) ---
+        // --- 雲端同步邏輯 (透過 npoint.io 免費開源 API) ---
         const getSyncPayload = () => ({
             itinerary: itineraryData.value,
             shopping: shoppingItems.value,
@@ -432,26 +428,19 @@ createApp({
 
         const generateSyncCode = async () => {
             isGenerating.value = true;
-            syncMessage.value = '正在連線至強效伺服器...';
+            syncMessage.value = '正在配置雲端空間...';
             try {
-                const response = await fetch('https://jsonblob.com/api/jsonBlob', {
+                const response = await fetch('https://api.npoint.io/', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(getSyncPayload())
                 });
-                
-                // JSONBlob 會在 Header 回傳房間的專屬網址
-                const locationHeader = response.headers.get('Location');
-                if (locationHeader) {
-                    syncId.value = locationHeader.split('/').pop();
-                    localStorage.setItem('hokkaido_trip_v7_syncId', syncId.value);
-                    syncMessage.value = '建立成功！';
-                } else {
-                    throw new Error('伺服器未回傳房號');
-                }
+                const data = await response.json();
+                syncId.value = data.id;
+                localStorage.setItem('hokkaido_trip_syncId', data.id);
+                syncMessage.value = '建立成功！';
             } catch (error) {
-                console.error(error);
-                syncMessage.value = '建立失敗：網路阻擋，請嘗試下方的「離線代碼傳送」';
+                syncMessage.value = '建立失敗，請確認網路連線';
             }
             isGenerating.value = false;
         };
@@ -460,17 +449,17 @@ createApp({
             if (!inputSyncId.value) return;
             syncMessage.value = '下載資料中...';
             try {
-                const response = await fetch(`https://jsonblob.com/api/jsonBlob/${inputSyncId.value.trim()}`);
+                const response = await fetch(`https://api.npoint.io/${inputSyncId.value}`);
                 if (!response.ok) throw new Error('Not Found');
                 const data = await response.json();
                 
-                isInitialLoad = true; 
+                isInitialLoad = true; // 暫停自動上傳
                 if (data.itinerary) itineraryData.value = data.itinerary;
                 if (data.shopping) shoppingItems.value = data.shopping;
                 if (data.food) foodRefs.value = data.food;
                 
-                syncId.value = inputSyncId.value.trim();
-                localStorage.setItem('hokkaido_trip_v7_syncId', syncId.value);
+                syncId.value = inputSyncId.value;
+                localStorage.setItem('hokkaido_trip_syncId', inputSyncId.value);
                 syncMessage.value = '成功加入！資料已同步。';
                 setTimeout(() => { showSyncModal.value = false; isInitialLoad = false; }, 1500);
             } catch (error) {
@@ -486,20 +475,20 @@ createApp({
         const disconnectSync = () => {
             if(confirm('確定要斷開連線嗎？斷開後變更只會儲存在這台手機上。')) {
                 syncId.value = '';
-                localStorage.removeItem('hokkaido_trip_v7_syncId');
+                localStorage.removeItem('hokkaido_trip_syncId');
                 syncMessage.value = '已斷開連線';
             }
         };
 
-        // 自動上傳
+        // 自動上傳防抖動處理
         let autoSyncTimeout;
         const pushToServer = async () => {
             if (!syncId.value) return;
             isSyncing.value = true;
             try {
-                await fetch(`https://jsonblob.com/api/jsonBlob/${syncId.value}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                await fetch(`https://api.npoint.io/${syncId.value}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(getSyncPayload())
                 });
             } catch (e) {
@@ -508,61 +497,36 @@ createApp({
             isSyncing.value = false;
         };
 
-        // --- B計畫：離線文字代碼傳送 ---
-        const exportOfflineCode = () => {
-            // 為了避免照片導致字串過長LINE傳送失敗，離線代碼會自動剔除照片資料
-            const safePayload = {
-                itinerary: itineraryData.value,
-                food: foodRefs.value,
-                shopping: shoppingItems.value.map(item => ({ text: item.text, image: null })) 
-            };
-            const codeString = btoa(encodeURIComponent(JSON.stringify(safePayload)));
-            navigator.clipboard.writeText(codeString).then(() => {
-                alert('行程代碼已經複製！\n請直接貼上並傳送到阿鈺的 LINE，請她用下方「貼上行程代碼」按鈕匯入。');
-            }).catch(() => {
-                prompt('複製失敗，請手動全選複製以下代碼：', codeString);
-            });
-        };
 
-        const importOfflineCode = () => {
-            const codeString = prompt('請在此貼上阿鈺傳來的行程代碼：');
-            if (codeString) {
-                try {
-                    const data = JSON.parse(decodeURIComponent(atob(codeString)));
-                    isInitialLoad = true;
-                    if (data.itinerary) itineraryData.value = data.itinerary;
-                    if (data.shopping) shoppingItems.value = data.shopping;
-                    if (data.food) foodRefs.value = data.food;
-                    alert('匯入成功！行程已更新。');
-                    showSyncModal.value = false;
-                    setTimeout(() => { isInitialLoad = false; }, 1000);
-                } catch (e) {
-                    alert('代碼格式錯誤或不完整，請確認複製是否完整。');
-                }
-            }
-        };
-
-        // 初始化
+        // --- 初始化與資料監聽 ---
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v7_itinerary');
+                // 先讀取本地端
+                const savedI = localStorage.getItem('hokkaido_trip_v6_itinerary') || localStorage.getItem('hokkaido_trip_v5_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v7_foodRefs');
+                
+                const savedF = localStorage.getItem('hokkaido_trip_v6_foodRefs') || localStorage.getItem('hokkaido_trip_v5_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v7_shopping');
+
+                const savedS = localStorage.getItem('hokkaido_trip_v6_shopping') || localStorage.getItem('hokkaido_trip_v5_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
 
-                const savedSyncId = localStorage.getItem('hokkaido_trip_v7_syncId');
+                // 檢查是否有同步房間代碼
+                const savedSyncId = localStorage.getItem('hokkaido_trip_syncId');
                 if (savedSyncId) {
                     syncId.value = savedSyncId;
-                    fetch(`https://jsonblob.com/api/jsonBlob/${savedSyncId}`)
+                    // 開啟網頁時自動下載最新版本
+                    fetch(`https://api.npoint.io/${savedSyncId}`)
                         .then(r => r.json())
                         .then(data => {
                             if (data.itinerary) itineraryData.value = data.itinerary;
                             if (data.shopping) shoppingItems.value = data.shopping;
                             if (data.food) foodRefs.value = data.food;
                         })
-                        .finally(() => { setTimeout(() => { isInitialLoad = false; }, 1000); });
+                        .finally(() => {
+                            // 資料就緒後解除上傳鎖定
+                            setTimeout(() => { isInitialLoad = false; }, 1000);
+                        });
                 } else {
                     isInitialLoad = false;
                 }
@@ -573,13 +537,17 @@ createApp({
         });
 
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            localStorage.setItem('hokkaido_trip_v7_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v7_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v7_foodRefs', JSON.stringify(foodRefs.value));
+            // 本地備份
+            localStorage.setItem('hokkaido_trip_v6_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v6_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v6_foodRefs', JSON.stringify(foodRefs.value));
 
+            // 如果有同步房號，且不是初次載入，則啟動自動上傳 (延遲 2 秒避免連續打字狂送請求)
             if (syncId.value && !isInitialLoad) {
                 clearTimeout(autoSyncTimeout);
-                autoSyncTimeout = setTimeout(() => { pushToServer(); }, 2000);
+                autoSyncTimeout = setTimeout(() => {
+                    pushToServer();
+                }, 2000);
             }
         }, { deep: true });
 
@@ -591,8 +559,7 @@ createApp({
             triggerCamera, handleImageUpload, removeImage,
             getCategoryColor, getCategoryIcon,
             showSyncModal, syncId, inputSyncId, isGenerating, isSyncing, syncMessage,
-            generateSyncCode, joinSyncCode, forceSyncDownload, disconnectSync,
-            exportOfflineCode, importOfflineCode
+            generateSyncCode, joinSyncCode, forceSyncDownload, disconnectSync
         }
     }
 }).mount('#app')
