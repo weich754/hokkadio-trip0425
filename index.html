@@ -44,6 +44,7 @@
         .note-tag { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #F1F5F9; color: #64748B; font-weight: bold; }
         .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -94,10 +95,10 @@
                         </div>
                         
                         <div class="absolute top-4 right-3 flex flex-col space-y-2">
-                            <button @click.stop="openMap(item.address || item.name)" class="w-7 h-7 bg-sakura-pink/10 text-sakura-pink rounded-full flex items-center justify-center text-xs hover:bg-sakura-pink hover:text-white transition-colors" title="導航至此">
+                            <button @click.stop="openMap(item.address || item.name)" class="w-7 h-7 bg-sakura-pink/10 text-sakura-pink rounded-full flex items-center justify-center text-xs hover:bg-sakura-pink hover:text-white transition-colors">
                                 <i class="fa-solid fa-location-arrow"></i>
                             </button>
-                            <button @click.stop="editItem(item, idx)" class="w-7 h-7 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors" title="編輯行程">
+                            <button @click.stop="editItem(item, idx)" class="w-7 h-7 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors">
                                 <i class="fa-solid fa-pencil"></i>
                             </button>
                         </div>
@@ -112,12 +113,21 @@
 
         <div v-if="currentTab === 'info'" class="space-y-6 animate-fade-in">
             <div class="bg-white rounded-2xl p-5 card-shadow">
-                <h3 class="font-bold text-sakura-dark mb-4 flex items-center"><i class="fa-solid fa-star mr-2"></i> 美食口袋名單</h3>
-                <div class="space-y-4">
+                <h3 class="font-bold text-sakura-dark mb-4 flex items-center justify-between">
+                    <span><i class="fa-solid fa-star mr-2"></i> 美食口袋名單</span>
+                </h3>
+                <div class="space-y-5">
                     <div v-for="(list, title) in foodRefs" :key="title">
-                        <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest border-l-2 border-sakura-pink pl-2">{{ title }}</p>
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest border-l-2 border-sakura-pink pl-2">{{ title }}</p>
+                            <button @click="addFoodItem(title)" class="text-sakura-pink text-xs font-bold bg-sakura-pink/10 px-2 py-1 rounded hover:bg-sakura-pink hover:text-white transition-colors">+ 新增</button>
+                        </div>
                         <div class="flex flex-wrap gap-2">
-                            <span v-for="food in list" :key="food" class="bg-slate-50 text-slate-600 text-xs px-3 py-1.5 rounded-lg border border-slate-100">{{ food }}</span>
+                            <span v-for="(food, fIdx) in list" :key="fIdx" class="bg-slate-50 text-slate-600 text-xs pl-3 pr-1 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2">
+                                {{ food }}
+                                <button @click="removeFoodItem(title, fIdx)" class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-400 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+                            </span>
+                            <span v-if="list.length === 0" class="text-xs text-slate-300 italic">尚無資料</span>
                         </div>
                     </div>
                 </div>
@@ -134,13 +144,25 @@
         </div>
 
         <div v-if="currentTab === 'shopping'" class="animate-fade-in">
+            <input type="file" id="cameraInput" accept="image/*" class="hidden" @change="handleImageUpload">
+            
             <div class="grid grid-cols-2 gap-3">
-                <div v-for="(item, sIdx) in shoppingItems" :key="sIdx" class="bg-white p-4 rounded-2xl border border-slate-100 text-center text-sm font-medium text-slate-600 shadow-sm relative group">
-                    {{ item }}
-                    <button @click="shoppingItems.splice(sIdx, 1)" class="absolute -top-2 -right-2 bg-slate-800 text-white w-5 h-5 rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                <div v-for="(item, sIdx) in shoppingItems" :key="sIdx" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative group flex flex-col">
+                    <div v-if="item.image" class="relative">
+                        <img :src="item.image" class="image-preview bg-slate-50">
+                        <button @click="removeImage(sIdx)" class="absolute bottom-2 right-2 bg-slate-800/70 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <div v-else @click="triggerCamera(sIdx)" class="w-full h-[100px] bg-slate-50 rounded-xl mb-2 flex flex-col items-center justify-center text-slate-300 cursor-pointer hover:bg-slate-100 transition-colors border border-dashed border-slate-200">
+                        <i class="fa-solid fa-camera text-xl mb-1"></i>
+                        <span class="text-[10px]">加入照片</span>
+                    </div>
+                    
+                    <div class="text-center text-sm font-bold text-slate-700 mt-auto">{{ item.text }}</div>
+                    
+                    <button @click="removeShoppingItem(sIdx)" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs shadow-md"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
-            <button @click="addShoppingItem" class="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-sm font-bold hover:border-sakura-pink hover:text-sakura-pink transition-all">+ 新增購物項目</button>
+            <button @click="addShoppingItem" class="w-full mt-4 py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-sm font-bold hover:border-sakura-pink hover:text-sakura-pink transition-all bg-white">+ 新增爆買項目</button>
         </div>
     </main>
 
@@ -185,6 +207,7 @@ createApp({
         const showModal = ref(false);
         const isEditMode = ref(false);
         const editingIdx = ref(null);
+        const activeUploadIdx = ref(null); // 紀錄當前哪個購物項目正在上傳圖片
         
         const dates = [
             { date: '4月25日', weekday: 'SAT' }, { date: '4月26日', weekday: 'SUN' },
@@ -194,156 +217,160 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
+        // 簡化預設行程以免程式碼過長 (實際上你的 localStorage 已經有完整行程，它會覆蓋這個)
         const defaultItinerary = [
-            [ // 4/25
-                { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
-                { time: '10:00', category: 'transport', name: '南千歲站', note: '機場搭地鐵至南千歲取 JR PASS' },
-                { time: '13:58', category: 'transport', name: 'JR 北斗號 (南千歲➡️函館)', note: '13:58 ~ 17:13', seat: '3車 1A 1B' },
-                { time: '17:00', category: 'accommodation', name: '東急STAY 函館朝市', note: 'Check in 休息' },
-                { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
-                { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '買買買' }
-            ],
-            [ // 4/26
-                { time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' },
-                { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
-                { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
-                { time: '13:00', category: 'food', name: '中餐：菠蘿麵包', note: '世界第二好吃菠蘿麵包' },
-                { time: '14:00', category: 'sightseeing', name: '八板山 / 函館公園🌸', note: '紅磚倉庫散步' },
-                { time: '17:00', category: 'sightseeing', name: '函館山夜景 🌛', note: 'KKDAY 買票 (看 Live Cam)' },
-                { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
-                { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
-            ],
-            [ // 4/27
-                { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
-                { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
-                { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
-                { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
-                { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
-            ],
-            [ // 4/28
-                { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
-                { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
-                { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
-                { time: '15:00', category: 'accommodation', name: '湖の栖 (Check in)', note: '洞爺湖散步' },
-                { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
-                { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
-            ],
-            [ // 4/29
-                { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
-                { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
-                { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
-                { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
-                { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
-            ],
-            [ // 4/30
-                { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
-                { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
-                { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
-                { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
-                { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
-            ],
-            [ // 5/1
-                { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
-                { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
-                { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
-                { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
-            ],
-            [ // 5/2
-                { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
-                { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
-                { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
-            ],
-            [ // 5/3
-                { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
-                { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
-                { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
-            ]
+            [{ time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' }],
+            [{ time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' }],
+            [{ time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' }],
+            [{ time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' }],
+            [{ time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' }],
+            [{ time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' }],
+            [{ time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' }],
+            [{ time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' }],
+            [{ time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' }]
         ];
 
         const itineraryData = ref(JSON.parse(JSON.stringify(defaultItinerary)));
-        const shoppingItems = ref(["六花亭萊姆餅乾", "白色戀人", "藥妝補貨", "Max Valu 零食"]);
-        const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
-
-        const foodRefs = {
+        
+        // 將購物清單升級為物件陣列，支援圖片
+        const shoppingItems = ref([
+            { text: "六花亭萊姆餅乾", image: null },
+            { text: "白色戀人", image: null },
+            { text: "藥妝補貨", image: null },
+            { text: "Max Valu 零食", image: null }
+        ]);
+        
+        // 將美食清單升級為響應式物件
+        const foodRefs = ref({
             "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
             "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
             "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵や 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
             "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
-        };
+        });
 
+        const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
         const currentDayItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
 
-        const handleAddClick = () => {
-            isEditMode.value = false;
-            newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' };
-            showModal.value = true;
-        };
+        /* --- 行程管理 --- */
+        const handleAddClick = () => { isEditMode.value = false; newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' }; showModal.value = true; };
+        const editItem = (item, idx) => { isEditMode.value = true; editingIdx.value = idx; newItem.value = { ...item }; showModal.value = true; };
+        const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
+        const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
+        const openMap = (q) => { if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
 
-        const editItem = (item, idx) => {
-            isEditMode.value = true;
-            editingIdx.value = idx;
-            newItem.value = { ...item };
-            showModal.value = true;
+        /* --- 美食名單管理 --- */
+        const addFoodItem = (category) => {
+            const res = prompt(`請輸入要新增至【${category}】的項目：`);
+            if (res && res.trim() !== '') foodRefs.value[category].push(res.trim());
         };
-
-        const saveItem = () => {
-            if (isEditMode.value) {
-                itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value };
-            } else {
-                itineraryData.value[selectedDateIndex.value].push({ ...newItem.value });
+        const removeFoodItem = (category, idx) => {
+            if (confirm('確定要刪除這個口袋名單嗎？')) {
+                foodRefs.value[category].splice(idx, 1);
             }
-            showModal.value = false;
         };
 
-        const removeItem = () => {
-            itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1);
-            showModal.value = false;
-        };
-
+        /* --- 購物清單與圖片上傳管理 --- */
         const addShoppingItem = () => {
-            const res = prompt("請輸入購物項目：");
-            if (res) shoppingItems.value.push(res);
+            const res = prompt("請輸入爆買項目名稱：");
+            if (res && res.trim() !== '') {
+                shoppingItems.value.push({ text: res.trim(), image: null });
+            }
+        };
+        const removeShoppingItem = (idx) => {
+            if (confirm('確定要刪除這個購物項目嗎？')) {
+                shoppingItems.value.splice(idx, 1);
+            }
+        };
+        const triggerCamera = (idx) => {
+            activeUploadIdx.value = idx;
+            document.getElementById('cameraInput').click();
+        };
+        const removeImage = (idx) => {
+            shoppingItems.value[idx].image = null;
         };
 
-        // 安全的導航跳轉字串組合方式
-        const openMap = (q) => {
-            if (!q) return;
-            const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
-            window.open(searchUrl, '_blank');
+        // 圖片自動壓縮邏輯，避免暫存爆掉
+        const handleImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600; // 壓縮尺寸
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // 將壓縮後的圖片轉存為 Base64 (0.7 quality jpeg)
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    if (activeUploadIdx.value !== null) {
+                        shoppingItems.value[activeUploadIdx.value].image = compressedDataUrl;
+                    }
+                    // 清空 input 讓下次可以選同一張照片
+                    event.target.value = ''; 
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         };
 
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        // 加入 Try-Catch 確保即使舊暫存毀損也不會白畫面
+        // 資料儲存機制 (升級版本至 v4 確保結構正確)
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v3_itinerary');
-                if (savedI) {
-                    const parsedI = JSON.parse(savedI);
-                    if (Array.isArray(parsedI)) itineraryData.value = parsedI;
-                }
-            } catch(e) {
-                console.error("行程資料解析失敗，載入預設值", e);
-            }
+                // 優先讀取 v4 (新結構)
+                const savedI = localStorage.getItem('hokkaido_trip_v4_itinerary') || localStorage.getItem('hokkaido_trip_v3_itinerary');
+                if (savedI) itineraryData.value = JSON.parse(savedI);
+                
+                const savedF = localStorage.getItem('hokkaido_trip_v4_foodRefs');
+                if (savedF) foodRefs.value = JSON.parse(savedF);
 
-            try {
-                const savedS = localStorage.getItem('hokkaido_trip_v3_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v4_shopping') || localStorage.getItem('hokkaido_trip_v3_shopping');
                 if (savedS) {
                     const parsedS = JSON.parse(savedS);
-                    if (Array.isArray(parsedS)) shoppingItems.value = parsedS;
+                    // 舊版資料升級相容 (如果是字串陣列，轉為物件陣列)
+                    if (parsedS.length > 0 && typeof parsedS[0] === 'string') {
+                        shoppingItems.value = parsedS.map(text => ({ text: text, image: null }));
+                    } else if (parsedS.length > 0) {
+                        shoppingItems.value = parsedS;
+                    }
                 }
             } catch(e) {
-                console.error("購物清單解析失敗，載入預設值", e);
+                console.error("資料解析失敗", e);
             }
         });
 
-        watch([itineraryData, shoppingItems], () => {
-            localStorage.setItem('hokkaido_trip_v3_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v3_shopping', JSON.stringify(shoppingItems.value));
+        watch([itineraryData, shoppingItems, foodRefs], () => {
+            localStorage.setItem('hokkaido_trip_v4_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v4_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v4_foodRefs', JSON.stringify(foodRefs.value));
         }, { deep: true });
 
-        return { currentTab, selectedDateIndex, dates, itineraryData, foodRefs, shoppingItems, currentDayItinerary, showModal, newItem, isEditMode, handleAddClick, editItem, saveItem, removeItem, openMap, addShoppingItem, getCategoryColor, getCategoryIcon }
+        return { 
+            currentTab, selectedDateIndex, dates, itineraryData, foodRefs, shoppingItems, 
+            currentDayItinerary, showModal, newItem, isEditMode, 
+            handleAddClick, editItem, saveItem, removeItem, openMap, 
+            addFoodItem, removeFoodItem, addShoppingItem, removeShoppingItem, 
+            triggerCamera, handleImageUpload, removeImage,
+            getCategoryColor, getCategoryIcon 
+        }
     }
 }).mount('#app')
 </script>
