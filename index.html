@@ -2,13 +2,20 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>北海道深度賞櫻行 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>北海道賞櫻</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="北海道賞櫻">
+    <meta name="theme-color" content="#F48FB1">
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=192&q=80">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.5.2/mqtt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -31,10 +38,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; }
+        body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; -webkit-tap-highlight-color: transparent; }
+        /* 針對瀏海屏的頂部預留空間 */
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
         .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); }
-        .header-image-container { width: 100%; height: 200px; position: relative; }
+        .header-image-container { width: 100%; height: 220px; position: relative; }
         .header-image-container img { width: 100%; height: 100%; object-fit: cover; }
         .side-tab-bar { position: absolute; bottom: 30px; right: 16px; z-index: 30; display: flex; gap: 8px; }
         .tab-button { width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(244, 143, 177, 0.3); transition: all 0.2s; background-color: white; color: #F48FB1; }
@@ -46,8 +54,8 @@
         .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
-        .sync-badge { position: absolute; top: 16px; right: 16px; z-index: 40; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.3); }
-        .sync-badge:hover { background: rgba(216, 27, 96, 0.9); transform: scale(1.05); }
+        /* 針對主畫面模式調整按鈕位置 */
+        .sync-badge { position: absolute; top: env(safe-area-inset-top, 16px); right: 16px; z-index: 40; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; border: 1px solid rgba(255,255,255,0.3); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -59,8 +67,8 @@
             <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/50 to-transparent"></div>
             
             <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg">
-                <i class="fa-solid fa-wifi" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
-                <span>{{ isConnected ? '已連線 (即時同步中)' : '未連線' }}</span>
+                <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
+                <span>{{ isConnected ? '已連線同步中' : '雙人同步' }}</span>
             </div>
 
             <div class="absolute bottom-4 left-6 text-white">
@@ -76,34 +84,60 @@
     </div>
 
     <div v-if="showSyncModal" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative overflow-hidden">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
             <button @click="showSyncModal = false" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h3 class="font-bold text-lg mb-2 text-center text-slate-800"><i class="fa-solid fa-satellite-dish text-hokkaido-blue mr-2 text-xl"></i>專屬雙人連線</h3>
+            <h3 class="font-bold text-lg mb-2 text-center text-slate-800"><i class="fa-solid fa-heart text-sakura-pink mr-2 text-xl"></i>專屬雙人連線房</h3>
             
-            <p class="text-[10px] text-slate-500 text-center mb-5">
-                使用 WebSocket 即時通訊技術。<br>只要雙方都在此房號內，畫面會瞬間同步！
-            </p>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-center mt-4">
+                <p class="text-xs font-bold text-slate-500 mb-2">【 方案 A：即時自動連線 】</p>
+                <div class="w-full text-center text-3xl font-mono font-bold tracking-widest text-sakura-dark bg-white border-2 border-sakura-pink/30 rounded-xl p-3 mb-3 shadow-inner">
+                    041887
+                </div>
+                
+                <button v-if="!isConnected" @click="connectToRoom" class="w-full py-3 rounded-xl bg-hokkaido-blue text-white font-bold text-sm shadow-md hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-link"></i> 點擊連線
+                </button>
+                
+                <div v-else class="space-y-2">
+                    <button @click="forcePush" class="w-full py-2.5 rounded-xl bg-sakura-dark text-white font-bold text-xs shadow-md hover:bg-pink-600 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> 強制覆蓋對方行程
+                    </button>
+                    <button @click="disconnectRoom" class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-300 transition-all">
+                        斷開連線
+                    </button>
+                </div>
+                
+                <div v-if="syncStatusMsg" class="mt-2 text-center text-[10px] font-bold px-2 py-1 rounded transition-colors" :class="isConnected ? 'bg-green-50 text-green-600' : (syncStatusMsg.includes('❌') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-hokkaido-blue')">
+                    {{ syncStatusMsg }}
+                </div>
+            </div>
 
-            <div class="bg-slate-50 p-5 rounded-xl border border-slate-100 mb-4 text-center">
-                <p class="text-sm font-bold text-slate-700 mb-3">請確認專屬房號：</p>
-                <input v-model="syncCode" type="text" class="w-full text-center text-3xl font-mono font-bold tracking-widest text-sakura-dark bg-white border-2 border-sakura-pink/30 rounded-xl p-3 outline-none focus:border-sakura-pink transition-colors mb-4" :disabled="isConnected">
+            <div class="relative flex items-center py-1">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">網路不穩時的備案</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-2">
+                <p class="text-xs font-bold text-slate-500 mb-3 text-center">【 方案 B：手動代碼傳送 】</p>
                 
-                <button v-if="!isConnected" @click="connectToRoom" class="w-full py-3 rounded-xl bg-hokkaido-blue text-white font-bold text-sm shadow-md hover:bg-blue-500 transition-all">
-                    <i class="fa-solid fa-link"></i> 點我進入房間連線
+                <div class="flex gap-2 mb-3">
+                    <button @click="generateCode" class="flex-1 py-2.5 rounded-xl bg-green-500 text-white font-bold text-xs shadow-md hover:bg-green-600 transition-all flex justify-center items-center gap-1">
+                        <i class="fa-solid fa-copy"></i> 複製行程
+                    </button>
+                </div>
+                
+                <textarea v-model="importCode" placeholder="請貼上阿鈺傳來的代碼..." class="w-full h-12 bg-white rounded-xl p-2 text-[10px] outline-none border border-slate-200 focus:border-sakura-pink mb-2 resize-none"></textarea>
+                <button @click="importData" :disabled="!importCode" class="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs shadow-md disabled:opacity-50 hover:bg-slate-700 transition-all">
+                    <i class="fa-solid fa-download"></i> 立即手動更新
                 </button>
                 
-                <button v-else @click="disconnectRoom" class="w-full py-3 rounded-xl bg-red-500 text-white font-bold text-sm shadow-md hover:bg-red-600 transition-all">
-                    <i class="fa-solid fa-unlink"></i> 斷開連線
-                </button>
+                <textarea id="hiddenCodeBox" v-model="generatedCode" class="w-full h-10 mt-2 text-[10px] text-slate-400 p-2 border rounded-lg bg-white hidden focus:block" readonly></textarea>
+                
+                <div v-if="manualSyncMsg" class="mt-2 text-center text-[10px] font-bold text-green-600 animate-pulse">
+                    {{ manualSyncMsg }}
+                </div>
             </div>
-            
-            <div v-if="syncStatusMsg" class="text-center text-xs font-bold px-2 py-2 rounded" :class="isConnected ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-hokkaido-blue'">
-                {{ syncStatusMsg }}
-            </div>
-            
-            <p v-if="isConnected" class="text-[10px] text-slate-400 mt-4 text-center">
-                *為了保持連線順暢，爆買清單的照片會保留在各自的手機中，文字與行程則會即時同步。
-            </p>
         </div>
     </div>
 
@@ -250,13 +284,17 @@ createApp({
         const editingIdx = ref(null);
         const activeUploadIdx = ref(null);
         
-        // --- 終極 MQTT 即時連線變數 ---
+        // MQTT 連線變數
         const showSyncModal = ref(false);
-        const syncCode = ref('041887'); // 您要求的專屬代碼直接寫死！
         const isConnected = ref(false);
-        const syncStatusMsg = ref('準備就緒，隨時可連線');
+        const syncStatusMsg = ref('');
         let mqttClient = null;
-        let isReceivingUpdate = false; // 防止無限迴圈
+        let isReceivingUpdate = false; 
+
+        // LZString 備用變數
+        const generatedCode = ref('');
+        const importCode = ref('');
+        const manualSyncMsg = ref('');
         
         const dates = [
             { date: '4月25日', weekday: 'SAT' }, { date: '4月26日', weekday: 'SUN' },
@@ -268,7 +306,7 @@ createApp({
 
         // 完整行程資料
         const defaultItinerary = [
-            [ // 4/25
+            [
                 { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
                 { time: '10:00', category: 'transport', name: '南千歲站', note: '機場搭地鐵至南千歲取 JR PASS' },
                 { time: '13:58', category: 'transport', name: 'JR 北斗號 (南千歲➡️函館)', note: '13:58 ~ 17:13', seat: '3車 1A 1B' },
@@ -276,7 +314,7 @@ createApp({
                 { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
                 { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '買買買' }
             ],
-            [ // 4/26
+            [
                 { time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' },
                 { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
                 { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
@@ -286,14 +324,14 @@ createApp({
                 { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
                 { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
             ],
-            [ // 4/27
+            [
                 { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
                 { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
                 { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
                 { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
                 { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
             ],
-            [ // 4/28
+            [
                 { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
                 { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
                 { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
@@ -301,32 +339,32 @@ createApp({
                 { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
                 { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
             ],
-            [ // 4/29
+            [
                 { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
                 { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
                 { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
                 { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
                 { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
             ],
-            [ // 4/30
+            [
                 { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
                 { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
                 { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
                 { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
                 { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
             ],
-            [ // 5/1
+            [
                 { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
                 { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
                 { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
                 { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
             ],
-            [ // 5/2
+            [
                 { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
                 { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
                 { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
             ],
-            [ // 5/3
+            [
                 { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
                 { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
                 { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
@@ -334,14 +372,7 @@ createApp({
         ];
 
         const itineraryData = ref(JSON.parse(JSON.stringify(defaultItinerary)));
-        
-        const shoppingItems = ref([
-            { text: "六花亭萊姆餅乾", image: null },
-            { text: "白色戀人", image: null },
-            { text: "藥妝補貨", image: null },
-            { text: "Max Valu 零食", image: null }
-        ]);
-        
+        const shoppingItems = ref([{ text: "六花亭萊姆餅乾", image: null }, { text: "白色戀人", image: null }, { text: "藥妝補貨", image: null }, { text: "Max Valu 零食", image: null }]);
         const foodRefs = ref({
             "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
             "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
@@ -358,21 +389,13 @@ createApp({
         const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
         const openMap = (q) => { if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
 
-        const addFoodItem = (category) => {
-            const res = prompt(`請輸入要新增至【${category}】的項目：`);
-            if (res && res.trim() !== '') foodRefs.value[category].push(res.trim());
-        };
+        const addFoodItem = (category) => { const res = prompt(`請輸入要新增至【${category}】的項目：`); if (res && res.trim() !== '') foodRefs.value[category].push(res.trim()); };
         const removeFoodItem = (category, idx) => { if (confirm('確定要刪除這個口袋名單嗎？')) foodRefs.value[category].splice(idx, 1); };
-
-        const addShoppingItem = () => {
-            const res = prompt("請輸入爆買項目名稱：");
-            if (res && res.trim() !== '') shoppingItems.value.push({ text: res.trim(), image: null });
-        };
+        const addShoppingItem = () => { const res = prompt("請輸入爆買項目名稱："); if (res && res.trim() !== '') shoppingItems.value.push({ text: res.trim(), image: null }); };
         const removeShoppingItem = (idx) => { if (confirm('確定要刪除這個購物項目嗎？')) shoppingItems.value.splice(idx, 1); };
         const triggerCamera = (idx) => { activeUploadIdx.value = idx; document.getElementById('cameraInput').click(); };
         const removeImage = (idx) => { shoppingItems.value[idx].image = null; };
 
-        // 圖片上傳 (保留在本地端，不上傳 MQTT 以確保速度)
         const handleImageUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -388,9 +411,7 @@ createApp({
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    if (activeUploadIdx.value !== null) { 
-                        shoppingItems.value[activeUploadIdx.value].image = canvas.toDataURL('image/jpeg', 0.7); 
-                    }
+                    if (activeUploadIdx.value !== null) { shoppingItems.value[activeUploadIdx.value].image = canvas.toDataURL('image/jpeg', 0.7); }
                     event.target.value = ''; 
                 };
                 img.src = e.target.result;
@@ -401,94 +422,107 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        // === MQTT WebSocket 即時連線核心邏輯 ===
-        const getTopic = () => 'hokkaido_app_sync_' + syncCode.value;
-
+        // === 方案 A：MQTT 即時連線 ===
         const connectToRoom = () => {
-            if (!syncCode.value) return;
-            syncStatusMsg.value = '連線中...請稍候';
+            if (isConnected.value) return;
+            syncStatusMsg.value = '連線中...';
             
-            // 使用公共且穩定的 emqx MQTT 伺服器
-            mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+            try {
+                mqttClient = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt', { connectTimeout: 5000, reconnectPeriod: 5000 });
+                mqttClient.on('connect', () => {
+                    isConnected.value = true;
+                    syncStatusMsg.value = `✅ 已連線`;
+                    mqttClient.subscribe('hokkaido_app_041887');
+                    setTimeout(() => { showSyncModal.value = false; }, 1000);
+                });
 
-            mqttClient.on('connect', () => {
-                isConnected.value = true;
-                syncStatusMsg.value = `✅ 已成功加入房間 ${syncCode.value}`;
-                
-                // 訂閱專屬房間頻道
-                mqttClient.subscribe(getTopic());
-                
-                setTimeout(() => { showSyncModal.value = false; }, 1000);
-            });
+                mqttClient.on('message', (topic, message) => {
+                    try {
+                        const data = JSON.parse(message.toString());
+                        isReceivingUpdate = true;
+                        if (data.i) itineraryData.value = data.i;
+                        if (data.f) foodRefs.value = data.f;
+                        if (data.s) {
+                            shoppingItems.value = data.s.map((item, i) => {
+                                const currentImage = shoppingItems.value[i] ? shoppingItems.value[i].image : null;
+                                return { text: item.t, image: currentImage };
+                            });
+                        }
+                        setTimeout(() => { isReceivingUpdate = false; }, 800);
+                    } catch (e) {}
+                });
 
-            // 當收到對方修改的資料時
-            mqttClient.on('message', (topic, message) => {
-                try {
-                    const data = JSON.parse(message.toString());
-                    isReceivingUpdate = true; // 鎖定狀態，避免無限迴圈回傳
-                    
-                    if (data.i) itineraryData.value = data.i;
-                    if (data.f) foodRefs.value = data.f;
-                    // 同步購物清單文字，並保留自己手機上的照片
-                    if (data.s) {
-                        const newShopping = data.s.map((item, i) => {
-                            const currentImage = shoppingItems.value[i] ? shoppingItems.value[i].image : null;
-                            return { text: item.t, image: currentImage };
-                        });
-                        shoppingItems.value = newShopping;
-                    }
-
-                    // 0.5秒後解除鎖定
-                    setTimeout(() => { isReceivingUpdate = false; }, 500);
-                } catch (e) {
-                    console.error('資料解析失敗', e);
-                }
-            });
-
-            mqttClient.on('error', (err) => {
-                isConnected.value = false;
-                syncStatusMsg.value = '❌ 連線失敗，請檢查網路';
-            });
+                mqttClient.on('error', () => { isConnected.value = false; syncStatusMsg.value = '❌ 連線受阻'; });
+                mqttClient.on('offline', () => { isConnected.value = false; syncStatusMsg.value = '⚠️ 網路不穩斷線中'; });
+            } catch (e) { syncStatusMsg.value = '❌ 系統錯誤'; }
         };
 
         const disconnectRoom = () => {
-            if (mqttClient) {
-                mqttClient.end();
-                isConnected.value = false;
-                syncStatusMsg.value = '已斷開連線';
+            if (mqttClient) { mqttClient.end(); isConnected.value = false; syncStatusMsg.value = ''; }
+        };
+
+        const forcePush = () => {
+            if (isConnected.value && mqttClient) {
+                const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+                mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
+                syncStatusMsg.value = '✅ 已強制推播！';
+                setTimeout(() => { showSyncModal.value = false; }, 1000);
             }
         };
 
-        // 初始化載入
+        // === 方案 B：離線文字代碼 ===
+        const generateCode = () => {
+            const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+            try {
+                const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(safePayload));
+                generatedCode.value = compressed;
+                navigator.clipboard.writeText(compressed).then(() => {
+                    manualSyncMsg.value = '✅ 已複製！請傳給阿鈺';
+                    setTimeout(() => { manualSyncMsg.value = ''; }, 3000);
+                }).catch(() => {
+                    document.getElementById('hiddenCodeBox').classList.remove('hidden');
+                    document.getElementById('hiddenCodeBox').select();
+                    manualSyncMsg.value = '請手動拷貝上方框內代碼';
+                });
+            } catch(e) {}
+        };
+
+        const importData = () => {
+            if(!importCode.value) return;
+            try {
+                const decompressed = LZString.decompressFromEncodedURIComponent(importCode.value.trim());
+                if (!decompressed) throw new Error("Invalid Code");
+                const data = JSON.parse(decompressed);
+                if (data.i) itineraryData.value = data.i;
+                if (data.f) foodRefs.value = data.f;
+                if (data.s) shoppingItems.value = data.s.map((item, i) => ({ text: item.t, image: (shoppingItems.value[i] ? shoppingItems.value[i].image : null) }));
+                manualSyncMsg.value = '✅ 手動更新成功！';
+                importCode.value = '';
+                setTimeout(() => { showSyncModal.value = false; manualSyncMsg.value = ''; }, 1500);
+            } catch(e) { manualSyncMsg.value = '❌ 代碼錯誤，請確認'; }
+        };
+
+        // 初始化
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v9_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v11_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v9_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v11_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v9_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v11_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
-            } catch(e) {
-                console.error("資料解析失敗", e);
-            }
+            } catch(e) {}
         });
 
-        // 監聽所有資料變更 (自己修改時，自動推播給對方)
+        // 監聽變更
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            // 永遠保存在本地端
-            localStorage.setItem('hokkaido_trip_v9_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v9_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v9_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v11_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v11_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v11_foodRefs', JSON.stringify(foodRefs.value));
 
-            // 如果有連線，而且「不是」剛剛收到對方資料的狀態，才推播出去
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
-                const safePayload = {
-                    i: itineraryData.value,
-                    f: foodRefs.value,
-                    s: shoppingItems.value.map(item => ({ t: item.text })) // 剝除龐大的照片再傳送
-                };
-                // retain: true 確保阿鈺即使比較晚開 App，也能立刻收到最後一筆更新
-                mqttClient.publish(getTopic(), JSON.stringify(safePayload), { retain: true });
+                const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
+                mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
             }
         }, { deep: true });
 
@@ -499,8 +533,9 @@ createApp({
             addFoodItem, removeFoodItem, addShoppingItem, removeShoppingItem, 
             triggerCamera, handleImageUpload, removeImage,
             getCategoryColor, getCategoryIcon,
-            showSyncModal, syncCode, isConnected, syncStatusMsg,
-            connectToRoom, disconnectRoom
+            showSyncModal, isConnected, syncStatusMsg, manualSyncMsg,
+            connectToRoom, disconnectRoom, forcePush,
+            generatedCode, importCode, generateCode, importData
         }
     }
 }).mount('#app')
