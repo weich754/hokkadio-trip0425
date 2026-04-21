@@ -40,9 +40,8 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; -webkit-tap-highlight-color: transparent; }
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
-        .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); }
-        /* 使用背景圖片過渡，解決 img 標籤快取無法切換的問題 */
-        .header-image-container { width: 100%; height: 220px; position: relative; transition: background-image 0.5s ease-in-out; }
+        .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); background-color: #cbd5e1; }
+        .header-image-container { width: 100%; height: 220px; position: relative; }
         .side-tab-bar { position: absolute; bottom: 30px; right: 16px; z-index: 30; display: flex; gap: 8px; }
         .tab-button { width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(244, 143, 177, 0.3); transition: all 0.2s; background-color: white; color: #F48FB1; }
         .tab-button.active { background-color: #D81B60; color: white; transform: scale(1.1); }
@@ -60,20 +59,34 @@
 
 <div id="app" class="app-container">
     <div class="header-bg">
-        <div class="header-image-container bg-cover bg-center" :style="{ backgroundImage: 'url(' + currentHeaderImage + ')' }">
-            <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+        <div class="header-image-container relative">
             
-            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg relative z-20">
+            <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+                 :class="currentLocationName === '札幌' ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+                 
+            <img src="https://images.unsplash.com/photo-1621210137748-0c6813b192da?q=80&w=800&auto=format&fit=crop" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+                 :class="currentLocationName === '函館' ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+                 
+            <img src="https://images.unsplash.com/photo-1608931165449-6f9a0c9a416a?q=80&w=800&auto=format&fit=crop" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+                 :class="currentLocationName === '洞爺湖' ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+
+            <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/70 via-black/20 to-transparent z-20"></div>
+            
+            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg relative z-30">
                 <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
                 <span>{{ isConnected ? '已連線同步中' : '雙人同步' }}</span>
             </div>
 
-            <div class="absolute bottom-4 left-6 text-white relative z-20">
+            <div class="absolute bottom-4 left-6 text-white relative z-30">
                 <h1 class="text-xl font-bold drop-shadow-md">北海道深度賞櫻行</h1>
                 <p class="text-xs opacity-90 drop-shadow-md">4.25 - 5.03 | 函館．洞爺湖．札幌</p>
             </div>
         </div>
-        <div class="side-tab-bar relative z-30">
+        
+        <div class="side-tab-bar relative z-40">
             <button @click="currentTab = 'itinerary'" :class="{'active': currentTab === 'itinerary'}" class="tab-button"><i class="fa-solid fa-calendar-day"></i></button>
             <button @click="currentTab = 'info'" :class="{'active': currentTab === 'info'}" class="tab-button"><i class="fa-solid fa-utensils"></i></button>
             <button @click="currentTab = 'shopping'" :class="{'active': currentTab === 'shopping'}" class="tab-button"><i class="fa-solid fa-bag-shopping"></i></button>
@@ -321,11 +334,6 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
-        // 高度相關：各城市封面圖連結 (已更新為更明顯的特徵圖)
-        const hakodateGoryokakuImg = 'https://images.unsplash.com/photo-1621210137748-0c6813b192da?q=80&w=800&auto=format&fit=crop';
-        const lakeToyaImg = 'https://images.unsplash.com/photo-1608931165449-6f9a0c9a416a?q=80&w=800&auto=format&fit=crop'; 
-        const sapporoDefaultImg = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800&auto=format&fit=crop';
-
         // 行程日期對應的城市 (0=札幌, 1=函館, 2=洞爺湖)
         const locationMap = [
             { name: '函館', idx: 1 }, // 4/25
@@ -339,13 +347,10 @@ createApp({
             { name: '札幌', idx: 0 }  // 5/3
         ];
 
-        // ✅ 智慧動態封面：改為直接回傳背景圖 URL
-        const currentHeaderImage = computed(() => {
-            if (selectedDateIndex.value < 0) return sapporoDefaultImg;
-            const locName = locationMap[selectedDateIndex.value].name;
-            if (locName === '函館') return hakodateGoryokakuImg;
-            if (locName === '洞爺湖') return lakeToyaImg;
-            return sapporoDefaultImg; // 札幌與機場預設
+        // ✅ 直接回傳城市名稱給 HTML，用來控制那三張獨立 <img> 的透明度
+        const currentLocationName = computed(() => {
+            if (selectedDateIndex.value < 0) return '札幌';
+            return locationMap[selectedDateIndex.value].name;
         });
 
         // 預設行程資料
@@ -587,29 +592,23 @@ createApp({
         // 初始化
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v14_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v15_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v14_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v15_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v14_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v15_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
             } catch(e) {}
             
             // 讀取氣象預報
             fetchWeather();
-
-            // ✅ 預先載入三張超高畫質封面，解決網速過慢造成的切換卡頓
-            [hakodateGoryokakuImg, lakeToyaImg, sapporoDefaultImg].forEach(url => {
-                const img = new Image();
-                img.src = url;
-            });
         });
 
         // 監聽變更
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            localStorage.setItem('hokkaido_trip_v14_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v14_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v14_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v15_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v15_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v15_foodRefs', JSON.stringify(foodRefs.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
@@ -627,7 +626,7 @@ createApp({
             showSyncModal, isConnected, syncStatusMsg, manualSyncMsg,
             connectToRoom, disconnectRoom, forcePush,
             generatedCode, importCode, generateCode, importData,
-            currentWeather, currentHeaderImage
+            currentWeather, currentLocationName
         }
     }
 }).mount('#app')
