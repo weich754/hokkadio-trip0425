@@ -144,4 +144,188 @@
         </div>
     </main>
 
-    <button v-if="currentTab === 'itinerary'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-sakura-dark rounded
+    <button v-if="currentTab === 'itinerary'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-sakura-dark rounded-full fab-shadow text-white text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div v-if="showModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl overflow-y-auto max-h-[85vh]">
+            <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? '編輯行程' : '新增行程' }}</h3>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <input v-model="newItem.time" type="text" placeholder="時間 (09:00)" class="bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
+                    <select v-model="newItem.category" class="bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
+                        <option value="sightseeing">景點</option>
+                        <option value="food">美食</option>
+                        <option value="transport">交通</option>
+                        <option value="accommodation">住宿</option>
+                        <option value="flight">航班</option>
+                        <option value="shopping">購物</option>
+                    </select>
+                </div>
+                <input v-model="newItem.name" placeholder="名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
+                <input v-model="newItem.seat" placeholder="座位/代碼 (選填)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
+                <textarea v-model="newItem.note" placeholder="備註細節" rows="3" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100"></textarea>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button @click="showModal = false" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm flex-1">取消</button>
+                <button v-if="isEditMode" @click="removeItem" class="py-3 rounded-xl bg-red-100 text-red-500 font-bold text-sm w-12"><i class="fa-solid fa-trash"></i></button>
+                <button @click="saveItem" class="py-3 rounded-xl bg-sakura-dark text-white font-bold text-sm shadow-lg flex-1">儲存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, computed, watch, onMounted } = Vue
+createApp({
+    setup() {
+        const currentTab = ref('itinerary');
+        const selectedDateIndex = ref(0);
+        const showModal = ref(false);
+        const isEditMode = ref(false);
+        const editingIdx = ref(null);
+        
+        const dates = [
+            { date: '4月25日', weekday: 'SAT' }, { date: '4月26日', weekday: 'SUN' },
+            { date: '4月27日', weekday: 'MON' }, { date: '4月28日', weekday: 'TUE' },
+            { date: '4月29日', weekday: 'WED' }, { date: '4月30日', weekday: 'THU' },
+            { date: '5月1日', weekday: 'FRI' }, { date: '5月2日', weekday: 'SAT' },
+            { date: '5月3日', weekday: 'SUN' }
+        ];
+
+        const defaultItinerary = [
+            [ // 4/25
+                { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
+                { time: '10:00', category: 'transport', name: '南千歲站', note: '機場搭地鐵至南千歲取 JR PASS' },
+                { time: '13:58', category: 'transport', name: 'JR 北斗號 (南千歲➡️函館)', note: '13:58 ~ 17:13', seat: '3車 1A 1B' },
+                { time: '17:00', category: 'accommodation', name: '東急STAY 函館朝市', note: 'Check in 休息' },
+                { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
+                { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '買買買' }
+            ],
+            [ // 4/26
+                { time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' },
+                { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
+                { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
+                { time: '13:00', category: 'food', name: '中餐：菠蘿麵包', note: '世界第二好吃菠蘿麵包' },
+                { time: '14:00', category: 'sightseeing', name: '八板山 / 函館公園🌸', note: '紅磚倉庫散步' },
+                { time: '17:00', category: 'sightseeing', name: '函館山夜景 🌛', note: 'KKDAY 買票 (看 Live Cam)' },
+                { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
+                { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
+            ],
+            [ // 4/27
+                { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
+                { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
+                { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
+                { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
+                { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
+            ],
+            [ // 4/28
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
+                { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
+                { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'accommodation', name: '湖の栖 (Check in)', note: '洞爺湖散步' },
+                { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
+                { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
+            ],
+            [ // 4/29
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
+                { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
+                { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
+                { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 4/30
+                { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
+                { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
+                { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
+                { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
+                { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
+            ],
+            [ // 5/1
+                { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
+                { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
+                { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
+                { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
+            ],
+            [ // 5/2
+                { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
+                { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
+                { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 5/3
+                { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
+                { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
+                { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
+            ]
+        ];
+
+        const itineraryData = ref(JSON.parse(JSON.stringify(defaultItinerary)));
+        const shoppingItems = ref(["六花亭萊姆餅乾", "白色戀人", "藥妝補貨", "Max Valu 零食"]);
+        const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
+
+        const foodRefs = {
+            "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
+            "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
+            "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵や 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
+            "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
+        };
+
+        const currentDayItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
+
+        const handleAddClick = () => {
+            isEditMode.value = false;
+            newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' };
+            showModal.value = true;
+        };
+
+        const editItem = (item, idx) => {
+            isEditMode.value = true;
+            editingIdx.value = idx;
+            newItem.value = { ...item };
+            showModal.value = true;
+        };
+
+        const saveItem = () => {
+            if (isEditMode.value) {
+                itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value };
+            } else {
+                itineraryData.value[selectedDateIndex.value].push({ ...newItem.value });
+            }
+            showModal.value = false;
+        };
+
+        const removeItem = () => {
+            itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1);
+            showModal.value = false;
+        };
+
+        const addShoppingItem = () => {
+            const res = prompt("請輸入購物項目：");
+            if (res) shoppingItems.value.push(res);
+        };
+
+        const openMap = (q) => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+
+        const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
+        const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
+
+        // 資料儲存機制
+        onMounted(() => {
+            const savedI = localStorage.getItem('hokkaido_trip_v2_itinerary');
+            const savedS = localStorage.getItem('hokkaido_trip_v2_shopping');
+            if (savedI) itineraryData.value = JSON.parse(savedI);
+            if (savedS) shoppingItems.value = JSON.parse(savedS);
+        });
+
+        watch([itineraryData, shoppingItems], () => {
+            localStorage.setItem('hokkaido_trip_v2_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v2_shopping', JSON.stringify(shoppingItems.value));
+        }, { deep: true });
+
+        return { currentTab, selectedDateIndex, dates, itineraryData, foodRefs, shoppingItems, currentDayItinerary, showModal, newItem, isEditMode, handleAddClick, editItem, saveItem, removeItem, openMap, addShoppingItem, getCategoryColor, getCategoryIcon }
+    }
+}).mount('#app')
+</script>
+</body>
+</html>
