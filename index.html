@@ -20,7 +20,8 @@
                         'hokkaido-blue': '#64B5F6',        
                         'spring-green': '#81C784',      
                         'slate-800': '#1E293B',
-                    }
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.3s ease-out' }
                 }
             }
         }
@@ -28,6 +29,7 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; }
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
         .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); }
@@ -37,9 +39,11 @@
         .tab-button { width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(244, 143, 177, 0.3); transition: all 0.2s; background-color: white; color: #F48FB1; }
         .tab-button.active { background-color: #D81B60; color: white; transform: scale(1.1); }
         .date-selector-sticky { background-color: white; border-bottom: 1px solid #f1f5f9; z-index: 20; top: 0; position: sticky; }
-        .date-active { background-color: #D81B60 !important; color: white !important; }
+        .date-active { background-color: #D81B60 !important; color: white !important; border-color: #D81B60 !important; }
         .card-shadow { box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05); border: 1px solid #f8fafc; }
         .note-tag { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #F1F5F9; color: #64748B; font-weight: bold; }
+        .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -65,37 +69,50 @@
         <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
             <div class="flex overflow-x-auto hide-scrollbar space-x-2 pb-4 mb-4 date-selector-sticky -mx-4 px-4 pt-2">
                 <div v-for="(day, index) in dates" :key="index" @click="selectedDateIndex = index"
-                     class="flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center cursor-pointer border transition-all"
-                     :class="selectedDateIndex === index ? 'date-active shadow-md' : 'bg-white text-slate-400 border-slate-100'">
+                     class="flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center cursor-pointer border transition-all duration-200"
+                     :class="selectedDateIndex === index ? 'date-active shadow-md scale-105' : 'bg-white text-slate-400 border-slate-100'">
                     <span class="text-[10px] font-bold uppercase">{{ day.weekday }}</span>
                     <span class="text-sm font-bold">{{ day.date.split('月')[1].replace('日','') }}</span>
                 </div>
             </div>
 
             <div class="space-y-4">
-                <div v-for="(item, idx) in itineraryData[selectedDateIndex]" :key="idx" class="relative">
-                    <div class="bg-white rounded-2xl p-4 card-shadow flex items-start space-x-4">
+                <div v-for="(item, idx) in currentDayItinerary" :key="idx" class="relative">
+                    <div class="bg-white rounded-2xl p-4 card-shadow flex items-start space-x-4 relative overflow-hidden">
                         <div class="flex flex-col items-center min-w-[50px]">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm mb-1" :class="getCategoryColor(item.category)">
                                 <i :class="getCategoryIcon(item.category)"></i>
                             </div>
                             <span class="text-[10px] font-bold text-slate-400">{{ item.time }}</span>
                         </div>
-                        <div class="flex-1">
-                            <div class="flex justify-between items-start">
+                        <div class="flex-1 pr-10">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <h3 class="font-bold text-slate-800 leading-tight">{{ item.name }}</h3>
                                 <span v-if="item.seat" class="note-tag bg-blue-50 text-blue-500">{{ item.seat }}</span>
                             </div>
                             <p class="text-xs text-slate-500 mt-1 whitespace-pre-line">{{ item.note }}</p>
                         </div>
+                        
+                        <div class="absolute top-4 right-3 flex flex-col space-y-2">
+                            <button @click.stop="openMap(item.address || item.name)" class="w-7 h-7 bg-sakura-pink/10 text-sakura-pink rounded-full flex items-center justify-center text-xs hover:bg-sakura-pink hover:text-white transition-colors">
+                                <i class="fa-solid fa-location-arrow"></i>
+                            </button>
+                            <button @click.stop="editItem(item, idx)" class="w-7 h-7 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors">
+                                <i class="fa-solid fa-pencil"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div v-if="currentDayItinerary.length === 0" class="text-center py-16 text-slate-300">
+                    <i class="fa-solid fa-map-location-dot text-5xl mb-3 opacity-20"></i>
+                    <p class="text-sm">本日尚無行程</p>
                 </div>
             </div>
         </div>
 
         <div v-if="currentTab === 'info'" class="space-y-6 animate-fade-in">
             <div class="bg-white rounded-2xl p-5 card-shadow">
-                <h3 class="font-bold text-sakura-dark mb-4 flex items-center"><i class="fa-solid fa-star mr-2"></i> 美食口袋名單 (備註參考)</h3>
+                <h3 class="font-bold text-sakura-dark mb-4 flex items-center"><i class="fa-solid fa-star mr-2"></i> 美食口袋名單</h3>
                 <div class="space-y-4">
                     <div v-for="(list, title) in foodRefs" :key="title">
                         <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest border-l-2 border-sakura-pink pl-2">{{ title }}</p>
@@ -105,138 +122,26 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="bg-slate-800 rounded-2xl p-5 text-white shadow-lg">
-                <h3 class="font-bold mb-3 flex items-center text-sm"><i class="fa-solid fa-train mr-2 text-hokkaido-blue"></i> JR 重要資訊</h3>
+                <h3 class="font-bold mb-3 flex items-center text-sm"><i class="fa-solid fa-train mr-2 text-hokkaido-blue"></i> JR & 交通備註</h3>
                 <div class="text-xs space-y-2 opacity-90">
-                    <p>• 4/25 南千歲領取 PASS</p>
+                    <p>• 4/25 南千歲領 PASS (新千歲機場 ➡️ 南千歲)</p>
                     <p>• 4/27 五稜郭 7-11 取票代碼：<span class="text-yellow-400 font-bold">0266196</span></p>
-                    <p>• 札幌 ➡️ 新千歲機場 (約 40-60 mins)</p>
+                    <p>• 機場快速線：札幌 ➡️ 新千歲機場 (約 40 分鐘)</p>
                 </div>
             </div>
         </div>
 
         <div v-if="currentTab === 'shopping'" class="animate-fade-in">
-            <div class="bg-white rounded-2xl p-5 card-shadow mb-4">
-                <h3 class="font-bold text-slate-800 mb-2">爆買清單紀錄</h3>
-                <p class="text-xs text-slate-400">點擊右下角可自行新增項目</p>
-            </div>
             <div class="grid grid-cols-2 gap-3">
-                <div v-for="item in shoppingItems" :key="item" class="bg-white p-3 rounded-xl border border-slate-100 text-center text-sm font-medium text-slate-600 shadow-sm">
+                <div v-for="(item, sIdx) in shoppingItems" :key="sIdx" class="bg-white p-4 rounded-2xl border border-slate-100 text-center text-sm font-medium text-slate-600 shadow-sm relative group">
                     {{ item }}
+                    <button @click="shoppingItems.splice(sIdx, 1)" class="absolute -top-2 -right-2 bg-slate-800 text-white w-5 h-5 rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                 </div>
             </div>
+            <button @click="addShoppingItem" class="w-full mt-4 py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-sm font-bold hover:border-sakura-pink hover:text-sakura-pink transition-all">+ 新增購物項目</button>
         </div>
     </main>
-</div>
 
-<script>
-const { createApp, ref, onMounted } = Vue
-createApp({
-    setup() {
-        const currentTab = ref('itinerary');
-        const selectedDateIndex = ref(0);
-        
-        const dates = [
-            { date: '4月25日', weekday: 'SAT', location: '函館' },
-            { date: '4月26日', weekday: 'SUN', location: '函館' },
-            { date: '4月27日', weekday: 'MON', location: '函館' },
-            { date: '4月28日', weekday: 'TUE', location: '洞爺湖' },
-            { date: '4月29日', weekday: 'WED', location: '札幌' },
-            { date: '4月30日', weekday: 'THU', location: '札幌' },
-            { date: '5月1日', weekday: 'FRI', location: '札幌' },
-            { date: '5月2日', weekday: 'SAT', location: '札幌' },
-            { date: '5月3日', weekday: 'SUN', location: '返台' }
-        ];
-
-        const foodRefs = {
-            "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
-            "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
-            "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵や 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
-            "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
-        };
-
-        const itineraryData = [
-            [ // 4/25
-                { time: '06:20', category: 'flight', name: 'IT234 飛機 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
-                { time: '11:05', category: 'transport', name: '南千歲站', note: '領取 JR PASS' },
-                { time: '13:58', category: 'transport', name: 'JR 北斗號 (函館行)', note: '南千歲 ➡️ 函館', seat: '3車 1A 1B' },
-                { time: '17:13', category: 'accommodation', name: '東急STAY 函館朝市', note: 'Check-in 休息' },
-                { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
-                { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '宵夜採買' }
-            ],
-            [ // 4/26
-                { time: '08:00', category: 'food', name: '函館朝市', note: 'うに専門店世壱屋' },
-                { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜賞櫻' },
-                { time: '13:00', category: 'food', name: '菠蘿麵包', note: '世界第二好吃菠蘿麵包' },
-                { time: '14:00', category: 'sightseeing', name: '函館公園 / 八板山', note: '賞櫻與紅磚倉庫散步' },
-                { time: '17:00', category: 'sightseeing', name: '函館山夜景', note: 'KKDAY 買票 (Live Cam 確認)' },
-                { time: '18:00', category: 'food', name: '小丑漢堡', note: '函館必吃' },
-                { time: '20:00', category: 'food', name: 'GELATERIA La Giostra', note: '義式冰淇淋' }
-            ],
-            [ // 4/27
-                { time: '06:00', category: 'sightseeing', name: '五稜郭賞櫻', note: '五稜郭塔 9:00 營業\n7-11 代碼: 0266196' },
-                { time: '10:00', category: 'food', name: '壽司雅', note: '函館自由市場早午餐' },
-                { time: '11:00', category: 'shopping', name: '逛街夾娃娃', note: '自由活動' },
-                { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻', note: '浪漫燈光' },
-                { time: '18:00', category: 'food', name: '麵や 天嶺', note: '拉麵晚餐' }
-            ],
-            [ // 4/28
-                { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
-                { time: '12:14', category: 'transport', name: 'JR 往洞爺湖', note: '12:14 ➡️ 14:09', seat: '4車 14A 14B' },
-                { time: '15:00', category: 'accommodation', name: '入住：湖の栖', note: '洞爺湖畔散步' },
-                { time: '18:00', category: 'food', name: '飯店內晚餐', note: '享受懷石/百匯' },
-                { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
-            ],
-            [ // 4/29
-                { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
-                { time: '11:58', category: 'transport', name: 'JR 往札幌', note: '11:58 ➡️ 14:01', seat: '4車 14A 14B' },
-                { time: '15:00', category: 'sightseeing', name: '大通公園 / 電視塔', note: '創成川公園 / 紫丁香' },
-                { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位 (成吉思汗)' }
-            ],
-            [ // 4/30
-                { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
-                { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
-                { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時抵達' },
-                { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '櫻花散步' },
-                { time: '16:00', category: 'food', name: '奧芝商店湯咖哩', note: '海鮮底湯頭' }
-            ],
-            [ // 5/1
-                { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '絕美花手水' },
-                { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 準時門口排隊' },
-                { time: '13:00', category: 'transport', name: '小樽遊 (JR 快速線)', note: '運河散步 / 浪漫館 / LeTAO' },
-                { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '打卡景點' }
-            ],
-            [ // 5/2
-                { time: '10:00', category: 'sightseeing', name: '自由活動 / 大通公園', note: '最後採買補貨' },
-                { time: '17:00', category: 'sightseeing', name: '藻岩山夜景', note: '日本新三大夜景' },
-                { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位' }
-            ],
-            [ // 5/3
-                { time: '10:00', category: 'transport', name: '前往新千歲機場', note: '札幌 ➡️ 機場 (JR快速線)' },
-                { time: '13:00', category: 'shopping', name: '機場 Shopping', note: '國內線免稅店最後衝刺' },
-                { time: '19:10', category: 'flight', name: 'TR 893 飛機 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
-            ]
-        ];
-
-        const shoppingItems = ["六花亭萊姆餅乾", "LeTAO 起司蛋糕", "北菓樓開拓干貝", "白色戀人", "藥妝補貨", "Max Valu 零食"];
-
-        const getCategoryColor = (c) => ({
-            flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink',
-            accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500'
-        }[c]);
-
-        const getCategoryIcon = (c) => ({
-            flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils',
-            accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping'
-        }[c]);
-
-        return {
-            currentTab, selectedDateIndex, dates, itineraryData, foodRefs, shoppingItems,
-            getCategoryColor, getCategoryIcon
-        }
-    }
-}).mount('#app')
-</script>
-</body>
-</html>
+    <button v-if="currentTab === 'itinerary'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-sakura-dark rounded
