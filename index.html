@@ -207,7 +207,7 @@ createApp({
         const showModal = ref(false);
         const isEditMode = ref(false);
         const editingIdx = ref(null);
-        const activeUploadIdx = ref(null); // 紀錄當前哪個購物項目正在上傳圖片
+        const activeUploadIdx = ref(null);
         
         const dates = [
             { date: '4月25日', weekday: 'SAT' }, { date: '4月26日', weekday: 'SUN' },
@@ -217,22 +217,75 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
-        // 簡化預設行程以免程式碼過長 (實際上你的 localStorage 已經有完整行程，它會覆蓋這個)
+        // 完整補回 9 天的全部行程
         const defaultItinerary = [
-            [{ time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' }],
-            [{ time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' }],
-            [{ time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' }],
-            [{ time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' }],
-            [{ time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' }],
-            [{ time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' }],
-            [{ time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' }],
-            [{ time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' }],
-            [{ time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' }]
+            [ // 4/25
+                { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
+                { time: '10:00', category: 'transport', name: '南千歲站', note: '機場搭地鐵至南千歲取 JR PASS' },
+                { time: '13:58', category: 'transport', name: 'JR 北斗號 (南千歲➡️函館)', note: '13:58 ~ 17:13', seat: '3車 1A 1B' },
+                { time: '17:00', category: 'accommodation', name: '東急STAY 函館朝市', note: 'Check in 休息' },
+                { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
+                { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '買買買' }
+            ],
+            [ // 4/26
+                { time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' },
+                { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
+                { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
+                { time: '13:00', category: 'food', name: '中餐：菠蘿麵包', note: '世界第二好吃菠蘿麵包' },
+                { time: '14:00', category: 'sightseeing', name: '八板山 / 函館公園🌸', note: '紅磚倉庫散步' },
+                { time: '17:00', category: 'sightseeing', name: '函館山夜景 🌛', note: 'KKDAY 買票 (看 Live Cam)' },
+                { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
+                { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
+            ],
+            [ // 4/27
+                { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
+                { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
+                { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
+                { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
+                { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
+            ],
+            [ // 4/28
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
+                { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
+                { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'accommodation', name: '湖の栖 (Check in)', note: '洞爺湖散步' },
+                { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
+                { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
+            ],
+            [ // 4/29
+                { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
+                { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
+                { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
+                { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
+                { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 4/30
+                { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
+                { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
+                { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
+                { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
+                { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
+            ],
+            [ // 5/1
+                { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
+                { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
+                { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
+                { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
+            ],
+            [ // 5/2
+                { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
+                { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
+                { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
+            ],
+            [ // 5/3
+                { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
+                { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
+                { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
+            ]
         ];
 
         const itineraryData = ref(JSON.parse(JSON.stringify(defaultItinerary)));
         
-        // 將購物清單升級為物件陣列，支援圖片
         const shoppingItems = ref([
             { text: "六花亭萊姆餅乾", image: null },
             { text: "白色戀人", image: null },
@@ -240,7 +293,6 @@ createApp({
             { text: "Max Valu 零食", image: null }
         ]);
         
-        // 將美食清單升級為響應式物件
         const foodRefs = ref({
             "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
             "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
@@ -251,14 +303,12 @@ createApp({
         const newItem = ref({ time: '', category: 'food', name: '', note: '', seat: '' });
         const currentDayItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
 
-        /* --- 行程管理 --- */
         const handleAddClick = () => { isEditMode.value = false; newItem.value = { time: '', category: 'food', name: '', note: '', seat: '' }; showModal.value = true; };
         const editItem = (item, idx) => { isEditMode.value = true; editingIdx.value = idx; newItem.value = { ...item }; showModal.value = true; };
         const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
         const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
         const openMap = (q) => { if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
 
-        /* --- 美食名單管理 --- */
         const addFoodItem = (category) => {
             const res = prompt(`請輸入要新增至【${category}】的項目：`);
             if (res && res.trim() !== '') foodRefs.value[category].push(res.trim());
@@ -269,7 +319,6 @@ createApp({
             }
         };
 
-        /* --- 購物清單與圖片上傳管理 --- */
         const addShoppingItem = () => {
             const res = prompt("請輸入爆買項目名稱：");
             if (res && res.trim() !== '') {
@@ -289,7 +338,6 @@ createApp({
             shoppingItems.value[idx].image = null;
         };
 
-        // 圖片自動壓縮邏輯，避免暫存爆掉
         const handleImageUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -299,7 +347,7 @@ createApp({
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 600; // 壓縮尺寸
+                    const MAX_WIDTH = 600;
                     const MAX_HEIGHT = 600;
                     let width = img.width;
                     let height = img.height;
@@ -315,13 +363,11 @@ createApp({
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // 將壓縮後的圖片轉存為 Base64 (0.7 quality jpeg)
                     const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     
                     if (activeUploadIdx.value !== null) {
                         shoppingItems.value[activeUploadIdx.value].image = compressedDataUrl;
                     }
-                    // 清空 input 讓下次可以選同一張照片
                     event.target.value = ''; 
                 };
                 img.src = e.target.result;
@@ -332,25 +378,24 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        // 資料儲存機制 (升級版本至 v4 確保結構正確)
+        // 資料儲存機制 (全面升級至 v5)
         onMounted(() => {
             try {
-                // 優先讀取 v4 (新結構)
-                const savedI = localStorage.getItem('hokkaido_trip_v4_itinerary') || localStorage.getItem('hokkaido_trip_v3_itinerary');
-                if (savedI) itineraryData.value = JSON.parse(savedI);
+                // 優先讀取最新的 v5 存檔
+                const savedI = localStorage.getItem('hokkaido_trip_v5_itinerary');
+                if (savedI) {
+                    itineraryData.value = JSON.parse(savedI);
+                } 
+                // 如果沒有 v5 存檔，程式會自動使用上方完整定義的 defaultItinerary，不會再讀取舊的殘缺檔案
                 
-                const savedF = localStorage.getItem('hokkaido_trip_v4_foodRefs');
-                if (savedF) foodRefs.value = JSON.parse(savedF);
+                const savedF = localStorage.getItem('hokkaido_trip_v5_foodRefs');
+                if (savedF) {
+                    foodRefs.value = JSON.parse(savedF);
+                }
 
-                const savedS = localStorage.getItem('hokkaido_trip_v4_shopping') || localStorage.getItem('hokkaido_trip_v3_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v5_shopping');
                 if (savedS) {
-                    const parsedS = JSON.parse(savedS);
-                    // 舊版資料升級相容 (如果是字串陣列，轉為物件陣列)
-                    if (parsedS.length > 0 && typeof parsedS[0] === 'string') {
-                        shoppingItems.value = parsedS.map(text => ({ text: text, image: null }));
-                    } else if (parsedS.length > 0) {
-                        shoppingItems.value = parsedS;
-                    }
+                    shoppingItems.value = JSON.parse(savedS);
                 }
             } catch(e) {
                 console.error("資料解析失敗", e);
@@ -358,9 +403,9 @@ createApp({
         });
 
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            localStorage.setItem('hokkaido_trip_v4_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v4_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v4_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v5_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v5_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v5_foodRefs', JSON.stringify(foodRefs.value));
         }, { deep: true });
 
         return { 
