@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="北海道賞櫻">
     <meta name="theme-color" content="#F48FB1">
-    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=192&q=80">
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1621210137748-0c6813b192da?q=80&w=192&auto=format&fit=crop">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -40,9 +40,10 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; -webkit-tap-highlight-color: transparent; }
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
-        .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); }
+        .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); transition: background-image 0.5s ease-in-out; }
         .header-image-container { width: 100%; height: 220px; position: relative; }
-        .header-image-container img { width: 100%; height: 100%; object-fit: cover; }
+        /* 封面圖片樣式，確保切換滑順且不變形 */
+        .header-image-container img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.5s ease-in-out; }
         .side-tab-bar { position: absolute; bottom: 30px; right: 16px; z-index: 30; display: flex; gap: 8px; }
         .tab-button { width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(244, 143, 177, 0.3); transition: all 0.2s; background-color: white; color: #F48FB1; }
         .tab-button.active { background-color: #D81B60; color: white; transform: scale(1.1); }
@@ -60,21 +61,21 @@
 
 <div id="app" class="app-container">
     <div class="header-bg">
-        <div class="header-image-container">
-            <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80">
-            <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/50 to-transparent"></div>
+        <div class="header-image-container relative">
+            <img :src="currentHeaderImage" :key="currentHeaderImage" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
             
-            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg">
+            <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg relative z-20">
                 <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
                 <span>{{ isConnected ? '已連線同步中' : '雙人同步' }}</span>
             </div>
 
-            <div class="absolute bottom-4 left-6 text-white">
+            <div class="absolute bottom-4 left-6 text-white relative z-20">
                 <h1 class="text-xl font-bold">北海道深度賞櫻行</h1>
                 <p class="text-xs opacity-80">4.25 - 5.03 | 函館．洞爺湖．札幌</p>
             </div>
         </div>
-        <div class="side-tab-bar">
+        <div class="side-tab-bar relative z-30">
             <button @click="currentTab = 'itinerary'" :class="{'active': currentTab === 'itinerary'}" class="tab-button"><i class="fa-solid fa-calendar-day"></i></button>
             <button @click="currentTab = 'info'" :class="{'active': currentTab === 'info'}" class="tab-button"><i class="fa-solid fa-utensils"></i></button>
             <button @click="currentTab = 'shopping'" :class="{'active': currentTab === 'shopping'}" class="tab-button"><i class="fa-solid fa-bag-shopping"></i></button>
@@ -135,7 +136,7 @@
         </div>
     </div>
 
-    <main class="p-4">
+    <main class="p-4 relative z-10">
         <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
             <div class="flex overflow-x-auto hide-scrollbar space-x-2 pb-4 mb-4 date-selector-sticky -mx-4 px-4 pt-2">
                 <div v-for="(day, index) in dates" :key="index" @click="selectedDateIndex = index"
@@ -146,7 +147,7 @@
                 </div>
             </div>
 
-            <div v-if="currentWeather" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in">
+            <div v-if="currentWeather" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in relative z-0">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-hokkaido-blue shadow-sm">
                         <i class="fa-solid fa-location-dot"></i>
@@ -322,9 +323,36 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
+        // 高度相關：各城市封面圖連結
+        const hakodateGoryokakuImg = 'https://images.unsplash.com/photo-1621210137748-0c6813b192da?q=80&w=1200&auto=format&fit=crop';
+        const lakeToyaImg = 'https://images.unsplash.com/photo-1608931165449-6f9a0c9a416a?q=80&w=1200&auto=format&fit=crop'; // 類似洞爺湖煙火與羊蹄山景
+        const sapporoDefaultImg = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80';
+
+        // 行程日期對應的城市 (0=札幌, 1=函館, 2=洞爺湖)
+        const locationMap = [
+            { name: '函館', idx: 1 }, // 4/25
+            { name: '函館', idx: 1 }, // 4/26
+            { name: '函館', idx: 1 }, // 4/27
+            { name: '洞爺湖', idx: 2 }, // 4/28
+            { name: '札幌', idx: 0 }, // 4/29
+            { name: '札幌', idx: 0 }, // 4/30
+            { name: '札幌', idx: 0 }, // 5/1
+            { name: '札幌', idx: 0 }, // 5/2
+            { name: '札幌', idx: 0 }  // 5/3
+        ];
+
+        // ✅ 智慧動態封面：根據選取日期自動連線景點
+        const currentHeaderImage = computed(() => {
+            if (selectedDateIndex.value < 0) return sapporoDefaultImg;
+            const locName = locationMap[selectedDateIndex.value].name;
+            if (locName === '函館') return hakodateGoryokakuImg;
+            if (locName === '洞爺湖') return lakeToyaImg;
+            return sapporoDefaultImg; // 札幌與機場預設
+        });
+
         // 預設行程資料
         const defaultItinerary = [
-            [
+            [ // 4/25
                 { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
                 { time: '10:00', category: 'transport', name: '南千歲站', note: '機場搭地鐵至南千歲取 JR PASS' },
                 { time: '13:58', category: 'transport', name: 'JR 北斗號 (南千歲➡️函館)', note: '13:58 ~ 17:13', seat: '3車 1A 1B' },
@@ -332,7 +360,7 @@ createApp({
                 { time: '18:00', category: 'food', name: 'KINGBEAR 湯咖哩', note: '函館駅前店' },
                 { time: '20:00', category: 'shopping', name: 'MAX VALU 超市', note: '買買買' }
             ],
-            [
+            [ // 4/26
                 { time: '08:00', category: 'food', name: '函館朝市', note: '逛逛吃早餐' },
                 { time: '09:00', category: 'food', name: 'うに専門店世壱屋', note: '吃海鮮丼' },
                 { time: '10:00', category: 'sightseeing', name: '函館八幡宮', note: '參拜' },
@@ -342,14 +370,14 @@ createApp({
                 { time: '18:00', category: 'food', name: '晚餐：小丑漢堡', note: '必吃特色漢堡' },
                 { time: '19:00', category: 'food', name: 'GELATERIA La Giostra', note: '冰淇淋' }
             ],
-            [
+            [ // 4/27
                 { time: '06:00', category: 'sightseeing', name: '五稜郭🌸', note: '五稜郭塔 9點營業\n7-11買 0266196代碼', seat: '0266196' },
                 { time: '10:00', category: 'food', name: '壽司雅 (函館自由市場)', note: '早餐吃早午餐' },
                 { time: '11:00', category: 'shopping', name: '逛街買買買 / 夾夾夾', note: '自由活動' },
                 { time: '17:00', category: 'sightseeing', name: '五稜郭夜櫻🌸', note: '浪漫燈光' },
                 { time: '18:00', category: 'food', name: '晚餐：麺や 天嶺', note: '拉麵' }
             ],
-            [
+            [ // 4/28
                 { time: '07:00', category: 'food', name: '飯店早餐', note: '東急STAY' },
                 { time: '10:00', category: 'food', name: '吃早午餐', note: '自由安排' },
                 { time: '12:14', category: 'transport', name: 'JR 函館➡️洞爺湖', note: '12:14 ~ 14:09', seat: '4車 14A 14B' },
@@ -357,32 +385,32 @@ createApp({
                 { time: '18:00', category: 'food', name: '飯店晚餐', note: '享受懷石/百匯' },
                 { time: '20:45', category: 'sightseeing', name: '洞爺湖煙火', note: '20:45 ~ 21:15' }
             ],
-            [
+            [ // 4/29
                 { time: '07:00', category: 'food', name: '飯店早餐', note: '享受湖景' },
                 { time: '11:58', category: 'transport', name: 'JR 洞爺湖➡️札幌', note: '11:58 ~ 14:01', seat: '4車 14A 14B' },
                 { time: '15:00', category: 'sightseeing', name: '大通公園🌹 / 札幌電視塔', note: '東急STAY札幌 Check in' },
                 { time: '16:00', category: 'sightseeing', name: '創成川公園 / 紫丁香', note: '散步' },
                 { time: '19:45', category: 'food', name: '北海道產羊肉蔬菜', note: '19:45 已訂位', seat: '已訂位' }
             ],
-            [
+            [ // 4/30
                 { time: '08:00', category: 'sightseeing', name: '北海道神宮🌸', note: '參拜賞櫻' },
                 { time: '09:00', category: 'food', name: '六花亭判官餅', note: '神宮限定' },
                 { time: '11:30', category: 'food', name: 'BAAL 牛排飯', note: '11:30 開門準時吃' },
                 { time: '14:00', category: 'sightseeing', name: '圓山公園🌸', note: '賞櫻花' },
                 { time: '16:00', category: 'food', name: '晚餐：奧芝商店湯咖哩', note: '濃厚湯頭' }
             ],
-            [
+            [ // 5/1
                 { time: '08:00', category: 'sightseeing', name: '諏訪神社', note: '花手水' },
                 { time: '10:30', category: 'food', name: 'Toriton 壽司', note: '10:30 抵達門口排隊' },
                 { time: '13:00', category: 'transport', name: '小樽遊 (機場快速線)', note: '運河散步 / 浪漫館 / 商店街 / LeTAO' },
                 { time: '17:00', category: 'sightseeing', name: '小樽住吉神社', note: '參拜打卡' }
             ],
-            [
+            [ // 5/2
                 { time: '10:00', category: 'sightseeing', name: '大通公園自由活動', note: '逛街買買買' },
                 { time: '17:00', category: 'sightseeing', name: '藻岩山夜景 🌛', note: '搭乘纜車' },
                 { time: '19:45', category: 'food', name: 'RAZAN 燒肉 (南四條)', note: '19:45 已訂位', seat: '已訂位' }
             ],
-            [
+            [ // 5/3
                 { time: '10:00', category: 'transport', name: '札幌➡️新千歲機場', note: '機場快速線' },
                 { time: '13:00', category: 'shopping', name: '新千歲機場 Shopping', note: '最後採買' },
                 { time: '19:10', category: 'flight', name: '飛機 TR 893 (T1)', note: '19:10 CTS ~ 22:35 TPE' }
@@ -394,7 +422,7 @@ createApp({
         const foodRefs = ref({
             "早餐參考": ["飯店早餐", "機場早餐", "うに専門店世壱屋", "壽司雅 (早午餐)", "BAAL 牛排飯", "Toriton 壽司"],
             "午餐參考": ["世界第二好吃菠蘿麵包", "中餐自便", "千歲機場中餐"],
-            "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵や 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
+            "晚餐參考": ["Ikasei Daimonten (居酒屋)", "小丑漢堡", "麵推 天嶺", "飯店內晚餐", "北海道產羊肉和蔬菜", "奧芝商店湯咖哩", "RAZAN 燒肉"],
             "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
         });
 
@@ -443,29 +471,14 @@ createApp({
         // === 氣象 API 動態獲取邏輯 ===
         const fetchWeather = async () => {
             try {
-                // 呼叫 0=札幌, 1=函館, 2=洞爺湖 的經緯度，指定日期區間
+                // 呼叫 0=札幌, 1=函館, 2=洞爺湖 的經緯度
                 const url = 'https://api.open-meteo.com/v1/forecast?latitude=43.0621,41.7687,42.5458&longitude=141.3544,140.7366,140.8358&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&start_date=2026-04-25&end_date=2026-05-03';
                 const res = await fetch(url);
                 if(res.ok) {
                     weatherData.value = await res.json();
                 }
-            } catch(e) {
-                console.log("天氣資料讀取失敗");
-            }
+            } catch(e) { console.log("天氣資料讀取失敗"); }
         };
-
-        // 將每天的行程索引，對應到所在的城市 (0=札幌, 1=函館, 2=洞爺湖)
-        const locationMap = [
-            { name: '函館', idx: 1 }, // 4/25
-            { name: '函館', idx: 1 }, // 4/26
-            { name: '函館', idx: 1 }, // 4/27
-            { name: '洞爺湖', idx: 2 }, // 4/28
-            { name: '札幌', idx: 0 }, // 4/29
-            { name: '札幌', idx: 0 }, // 4/30
-            { name: '札幌', idx: 0 }, // 5/1
-            { name: '札幌', idx: 0 }, // 5/2
-            { name: '札幌', idx: 0 }  // 5/3
-        ];
 
         const currentWeather = computed(() => {
             if (!weatherData.value) return null;
@@ -490,9 +503,7 @@ createApp({
                 else if (code >= 95) { icon = 'fa-cloud-bolt'; color = 'text-purple-500'; desc = '雷雨'; }
 
                 return { location: loc.name, maxT, minT, pop, icon, color, desc };
-            } catch(e) {
-                return null;
-            }
+            } catch(e) { return null; }
         });
 
         // === 方案 A：MQTT 即時連線 ===
@@ -612,7 +623,7 @@ createApp({
             showSyncModal, isConnected, syncStatusMsg, manualSyncMsg,
             connectToRoom, disconnectRoom, forcePush,
             generatedCode, importCode, generateCode, importData,
-            currentWeather
+            currentWeather, currentHeaderImage
         }
     }
 }).mount('#app')
