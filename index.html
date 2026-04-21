@@ -39,7 +39,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; -webkit-tap-highlight-color: transparent; }
-        /* 針對瀏海屏的頂部預留空間 */
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
         .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); }
         .header-image-container { width: 100%; height: 220px; position: relative; }
@@ -54,7 +53,6 @@
         .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
-        /* 針對主畫面模式調整按鈕位置 */
         .sync-badge { position: absolute; top: env(safe-area-inset-top, 16px); right: 16px; z-index: 40; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; border: 1px solid rgba(255,255,255,0.3); margin-top: 10px; }
     </style>
 </head>
@@ -120,20 +118,16 @@
 
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-2">
                 <p class="text-xs font-bold text-slate-500 mb-3 text-center">【 方案 B：手動代碼傳送 】</p>
-                
                 <div class="flex gap-2 mb-3">
                     <button @click="generateCode" class="flex-1 py-2.5 rounded-xl bg-green-500 text-white font-bold text-xs shadow-md hover:bg-green-600 transition-all flex justify-center items-center gap-1">
                         <i class="fa-solid fa-copy"></i> 複製行程
                     </button>
                 </div>
-                
                 <textarea v-model="importCode" placeholder="請貼上阿鈺傳來的代碼..." class="w-full h-12 bg-white rounded-xl p-2 text-[10px] outline-none border border-slate-200 focus:border-sakura-pink mb-2 resize-none"></textarea>
                 <button @click="importData" :disabled="!importCode" class="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs shadow-md disabled:opacity-50 hover:bg-slate-700 transition-all">
                     <i class="fa-solid fa-download"></i> 立即手動更新
                 </button>
-                
                 <textarea id="hiddenCodeBox" v-model="generatedCode" class="w-full h-10 mt-2 text-[10px] text-slate-400 p-2 border rounded-lg bg-white hidden focus:block" readonly></textarea>
-                
                 <div v-if="manualSyncMsg" class="mt-2 text-center text-[10px] font-bold text-green-600 animate-pulse">
                     {{ manualSyncMsg }}
                 </div>
@@ -149,6 +143,27 @@
                      :class="selectedDateIndex === index ? 'date-active shadow-md scale-105' : 'bg-white text-slate-400 border-slate-100'">
                     <span class="text-[10px] font-bold uppercase">{{ day.weekday }}</span>
                     <span class="text-sm font-bold">{{ day.date.split('月')[1].replace('日','') }}</span>
+                </div>
+            </div>
+
+            <div v-if="currentWeather" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-hokkaido-blue shadow-sm">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div>
+                        <span class="text-sm font-bold text-slate-700">{{ currentWeather.location }}</span>
+                        <p class="text-[10px] text-slate-500 font-bold mt-0.5">{{ currentWeather.desc }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] font-bold" :class="currentWeather.pop > 40 ? 'text-blue-500' : 'text-slate-400'">降雨機率 {{ currentWeather.pop }}%</span>
+                        <span class="text-sm font-bold text-slate-700">{{ currentWeather.minT }}° ~ {{ currentWeather.maxT }}°</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
+                        <i class="fa-solid text-xl" :class="[currentWeather.icon, currentWeather.color]"></i>
+                    </div>
                 </div>
             </div>
 
@@ -295,6 +310,9 @@ createApp({
         const generatedCode = ref('');
         const importCode = ref('');
         const manualSyncMsg = ref('');
+
+        // 氣象資料變數
+        const weatherData = ref(null);
         
         const dates = [
             { date: '4月25日', weekday: 'SAT' }, { date: '4月26日', weekday: 'SUN' },
@@ -304,7 +322,7 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
-        // 完整行程資料
+        // 預設行程資料
         const defaultItinerary = [
             [
                 { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
@@ -422,6 +440,61 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
+        // === 氣象 API 動態獲取邏輯 ===
+        const fetchWeather = async () => {
+            try {
+                // 呼叫 0=札幌, 1=函館, 2=洞爺湖 的經緯度，指定日期區間
+                const url = 'https://api.open-meteo.com/v1/forecast?latitude=43.0621,41.7687,42.5458&longitude=141.3544,140.7366,140.8358&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&start_date=2026-04-25&end_date=2026-05-03';
+                const res = await fetch(url);
+                if(res.ok) {
+                    weatherData.value = await res.json();
+                }
+            } catch(e) {
+                console.log("天氣資料讀取失敗");
+            }
+        };
+
+        // 將每天的行程索引，對應到所在的城市 (0=札幌, 1=函館, 2=洞爺湖)
+        const locationMap = [
+            { name: '函館', idx: 1 }, // 4/25
+            { name: '函館', idx: 1 }, // 4/26
+            { name: '函館', idx: 1 }, // 4/27
+            { name: '洞爺湖', idx: 2 }, // 4/28
+            { name: '札幌', idx: 0 }, // 4/29
+            { name: '札幌', idx: 0 }, // 4/30
+            { name: '札幌', idx: 0 }, // 5/1
+            { name: '札幌', idx: 0 }, // 5/2
+            { name: '札幌', idx: 0 }  // 5/3
+        ];
+
+        const currentWeather = computed(() => {
+            if (!weatherData.value) return null;
+            try {
+                const loc = locationMap[selectedDateIndex.value];
+                const locData = weatherData.value[loc.idx].daily;
+                const dIdx = selectedDateIndex.value;
+                
+                const code = locData.weather_code[dIdx];
+                const maxT = Math.round(locData.temperature_2m_max[dIdx]);
+                const minT = Math.round(locData.temperature_2m_min[dIdx]);
+                const pop = locData.precipitation_probability_max[dIdx] || 0;
+
+                let icon = 'fa-cloud'; let color = 'text-slate-400'; let desc = '多雲';
+                if (code === 0) { icon = 'fa-sun'; color = 'text-orange-400'; desc = '晴朗'; }
+                else if (code <= 3) { icon = 'fa-cloud-sun'; color = 'text-slate-500'; desc = '晴時多雲'; }
+                else if (code <= 48) { icon = 'fa-smog'; color = 'text-slate-400'; desc = '起霧'; }
+                else if (code <= 67) { icon = 'fa-cloud-rain'; color = 'text-blue-400'; desc = '雨天'; }
+                else if (code <= 77) { icon = 'fa-snowflake'; color = 'text-blue-200'; desc = '下雪'; }
+                else if (code <= 82) { icon = 'fa-cloud-showers-heavy'; color = 'text-blue-500'; desc = '陣雨'; }
+                else if (code <= 86) { icon = 'fa-snowflake'; color = 'text-blue-300'; desc = '陣雪'; }
+                else if (code >= 95) { icon = 'fa-cloud-bolt'; color = 'text-purple-500'; desc = '雷雨'; }
+
+                return { location: loc.name, maxT, minT, pop, icon, color, desc };
+            } catch(e) {
+                return null;
+            }
+        });
+
         // === 方案 A：MQTT 即時連線 ===
         const connectToRoom = () => {
             if (isConnected.value) return;
@@ -505,20 +578,23 @@ createApp({
         // 初始化
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v11_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v12_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v11_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v12_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v11_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v12_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
             } catch(e) {}
+            
+            // 讀取氣象預報
+            fetchWeather();
         });
 
         // 監聽變更
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            localStorage.setItem('hokkaido_trip_v11_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v11_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v11_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v12_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v12_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v12_foodRefs', JSON.stringify(foodRefs.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
@@ -535,7 +611,8 @@ createApp({
             getCategoryColor, getCategoryIcon,
             showSyncModal, isConnected, syncStatusMsg, manualSyncMsg,
             connectToRoom, disconnectRoom, forcePush,
-            generatedCode, importCode, generateCode, importData
+            generatedCode, importCode, generateCode, importData,
+            currentWeather
         }
     }
 }).mount('#app')
