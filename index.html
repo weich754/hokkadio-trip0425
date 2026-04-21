@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="北海道賞櫻">
     <meta name="theme-color" content="#F48FB1">
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/192px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -61,17 +60,7 @@
     <div class="header-bg">
         <div class="header-image-container relative">
             
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Sapporo_TV_Tower_2023.jpg/800px-Sapporo_TV_Tower_2023.jpg" 
-                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-                 :class="selectedDateIndex >= 4 ? 'opacity-100 z-10' : 'opacity-0 z-0'">
-                 
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Lake_Toya_and_Mount_Yotei_02.jpg/800px-Lake_Toya_and_Mount_Yotei_02.jpg" 
-                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-                 :class="selectedDateIndex === 3 ? 'opacity-100 z-10' : 'opacity-0 z-0'">
-
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/800px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg" 
-                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-                 :class="selectedDateIndex <= 2 ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+            <img src="./banner.jpg" class="absolute inset-0 w-full h-full object-cover">
                  
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-20 pointer-events-none"></div>
             
@@ -449,7 +438,7 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        // ✅ 氣候大數據模擬：解決 2026 年 API 無法預測導致元件消失的問題
+        // 氣候大數據模擬
         const currentWeather = computed(() => {
             const mockData = {
                 '函館': [
@@ -563,20 +552,20 @@ createApp({
         // 初始化
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v16_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v17_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v16_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v17_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v16_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v17_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
             } catch(e) {}
         });
 
         // 監聽變更
         watch([itineraryData, shoppingItems, foodRefs], () => {
-            localStorage.setItem('hokkaido_trip_v16_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v16_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v16_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v17_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v17_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v17_foodRefs', JSON.stringify(foodRefs.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { i: itineraryData.value, f: foodRefs.value, s: shoppingItems.value.map(item => ({ t: item.text })) };
