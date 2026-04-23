@@ -159,19 +159,19 @@
                 </div>
             </div>
 
-            <div v-if="currentWeather" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-hokkaido-blue shadow-sm">
                         <i class="fa-solid fa-location-dot"></i>
                     </div>
                     <div>
                         <span class="text-sm font-bold text-slate-700">{{ currentWeather.location }}</span>
-                        <p class="text-[10px] text-slate-500 font-bold mt-0.5">{{ currentWeather.desc }}</p>
+                        <p class="text-[10px] text-slate-500 font-bold mt-0.5 tracking-wider">{{ currentWeather.desc }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="flex flex-col items-end">
-                        <span class="text-[10px] font-bold" :class="currentWeather.pop > 40 ? 'text-blue-500' : 'text-slate-400'">歷年降雨率 {{ currentWeather.pop }}%</span>
+                        <span class="text-[10px] font-bold" :class="currentWeather.pop > 40 ? 'text-blue-500' : 'text-slate-400'">降雨機率 {{ currentWeather.pop }}{{ currentWeather.pop !== '--' ? '%' : '' }}</span>
                         <span class="text-sm font-bold text-slate-700">{{ currentWeather.minT }}° ~ {{ currentWeather.maxT }}°</span>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
@@ -309,7 +309,6 @@
 </div>
 
 <script>
-// 嚴謹的 Vue 載入與初始化
 const { createApp, ref, computed, watch, onMounted } = Vue;
 
 createApp({
@@ -321,15 +320,10 @@ createApp({
         const editingIdx = ref(null);
         const activeUploadIdx = ref(null);
         
-        // 放大圖片變數
         const enlargedImage = ref(null);
-
-        // 封面圖片邏輯
         const coverImage = ref('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/800px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg');
         
-        const triggerCoverUpload = () => { 
-            document.getElementById('coverInput').click(); 
-        };
+        const triggerCoverUpload = () => { document.getElementById('coverInput').click(); };
 
         const handleCoverUpload = (event) => {
             const inputTarget = event.target;
@@ -349,7 +343,7 @@ createApp({
                     ctx.drawImage(img, 0, 0, width, height);
                     const base64Str = canvas.toDataURL('image/jpeg', 0.8);
                     coverImage.value = base64Str;
-                    localStorage.setItem('hokkaido_trip_v21_cover', base64Str);
+                    localStorage.setItem('hokkaido_trip_v22_cover', base64Str);
                     inputTarget.value = ''; 
                 };
                 img.src = e.target.result;
@@ -357,14 +351,12 @@ createApp({
             reader.readAsDataURL(file);
         };
 
-        // MQTT 連線變數
         const showSyncModal = ref(false);
         const isConnected = ref(false);
         const syncStatusMsg = ref('');
         let mqttClient = null;
         let isReceivingUpdate = false; 
 
-        // LZString 備用變數
         const generatedCode = ref('');
         const importCode = ref('');
         const manualSyncMsg = ref('');
@@ -377,7 +369,6 @@ createApp({
             { date: '5月3日', weekday: 'SUN' }
         ];
 
-        // 預設行程資料
         const defaultItinerary = [
             [
                 { time: '06:20', category: 'flight', name: '飛機 IT234 (T1)', note: '6:20 TPE ~ 11:05 CTS' },
@@ -453,7 +444,6 @@ createApp({
             "其他推薦": ["可麗餅店", "六花亭萊姆餅乾", "六花亭判官餅", "函館旬花", "函太郎五稜郭"]
         });
 
-        // 動態交通備註資料
         const transportNotes = ref([
             "4/25 南千歲領 PASS (新千歲機場 ➡️ 南千歲)",
             "4/27 五稜郭 7-11 取票代碼：0266196",
@@ -468,7 +458,6 @@ createApp({
         const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
         const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
         
-        // 修正地圖字串解析 Bug
         const openMap = (q) => { 
             if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); 
         };
@@ -476,7 +465,6 @@ createApp({
         const addFoodItem = (category) => { const res = prompt(`請輸入要新增至【${category}】的項目：`); if (res && res.trim() !== '') foodRefs.value[category].push(res.trim()); };
         const removeFoodItem = (category, idx) => { if (confirm('確定要刪除這個口袋名單嗎？')) foodRefs.value[category].splice(idx, 1); };
         
-        // 交通備註增刪功能
         const addTransportNote = () => { const res = prompt("請輸入交通備註或 JR 提醒事項："); if (res && res.trim() !== '') transportNotes.value.push(res.trim()); };
         const removeTransportNote = (idx) => { if (confirm('確定要刪除這條交通備註嗎？')) transportNotes.value.splice(idx, 1); };
 
@@ -512,37 +500,75 @@ createApp({
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
-        const currentWeather = computed(() => {
-            const mockData = {
-                '函館': [
-                    { maxT: 14, minT: 5, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗舒適' }, 
-                    { maxT: 15, minT: 6, pop: 20, icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '晴時多雲' }, 
-                    { maxT: 13, minT: 5, pop: 40, icon: 'fa-cloud', color: 'text-slate-400', desc: '多雲' } 
-                ],
-                '洞爺湖': [
-                    { maxT: 12, minT: 4, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗偏涼' } 
-                ],
-                '札幌': [
-                    { maxT: 16, minT: 7, pop: 15, icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '溫和多雲' }, 
-                    { maxT: 18, minT: 8, pop: 0, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗溫暖' }, 
-                    { maxT: 17, minT: 8, pop: 30, icon: 'fa-cloud', color: 'text-slate-400', desc: '多雲' }, 
-                    { maxT: 15, minT: 6, pop: 60, icon: 'fa-cloud-rain', color: 'text-blue-400', desc: '短暫陣雨' }, 
-                    { maxT: 16, minT: 7, pop: 10, icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗' } 
-                ]
-            };
+        // ================= 最新真實天氣 API (Open-Meteo) =================
+        const realWeatherData = ref(null);
 
-            let data;
-            if (selectedDateIndex.value <= 2) {
-                data = { ...mockData['函館'][selectedDateIndex.value], location: '函館市' };
-            } else if (selectedDateIndex.value === 3) {
-                data = { ...mockData['洞爺湖'][0], location: '洞爺湖町' };
-            } else {
-                data = { ...mockData['札幌'][selectedDateIndex.value - 4], location: '札幌市' };
+        const fetchRealWeather = async () => {
+            try {
+                // 依序為：函館、洞爺湖、札幌 的經緯度
+                const urls = [
+                    'https://api.open-meteo.com/v1/forecast?latitude=41.7687&longitude=140.7366&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=14', 
+                    'https://api.open-meteo.com/v1/forecast?latitude=42.5448&longitude=140.825&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=14', 
+                    'https://api.open-meteo.com/v1/forecast?latitude=43.0621&longitude=141.3544&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=14'  
+                ];
+                const responses = await Promise.all(urls.map(url => fetch(url)));
+                realWeatherData.value = await Promise.all(responses.map(res => res.json()));
+            } catch (e) {
+                console.error("即時氣象連線失敗：", e);
             }
-            return data;
+        };
+
+        const parseWeatherCode = (code) => {
+            if (code === 0) return { icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗' };
+            if (code === 1 || code === 2) return { icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '多雲時晴' };
+            if (code === 3) return { icon: 'fa-cloud', color: 'text-slate-400', desc: '陰天' };
+            if (code === 45 || code === 48) return { icon: 'fa-smog', color: 'text-slate-400', desc: '起霧' };
+            if (code >= 51 && code <= 55) return { icon: 'fa-cloud-rain', color: 'text-blue-400', desc: '毛毛雨' };
+            if (code >= 61 && code <= 65) return { icon: 'fa-cloud-showers-heavy', color: 'text-blue-500', desc: '陣雨' };
+            if (code >= 71 && code <= 77) return { icon: 'fa-snowflake', color: 'text-blue-300', desc: '降雪' };
+            if (code >= 80 && code <= 82) return { icon: 'fa-cloud-showers-water', color: 'text-blue-600', desc: '大雨' };
+            if (code >= 95 && code <= 99) return { icon: 'fa-bolt', color: 'text-yellow-500', desc: '雷陣雨' };
+            return { icon: 'fa-cloud', color: 'text-slate-400', desc: '預報載入中' };
+        };
+
+        const currentWeather = computed(() => {
+            const fallback = { location: '更新即時氣象中...', maxT: '-', minT: '-', pop: '-', icon: 'fa-spinner', color: 'text-slate-300 animate-spin', desc: '連線中' };
+            
+            if (!realWeatherData.value) return fallback;
+
+            // 0=函館, 1=洞爺湖, 2=札幌
+            const locIndexMap = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2 };
+            const locNames = ["函館市", "洞爺湖町", "札幌市"];
+            
+            const locIdx = locIndexMap[selectedDateIndex.value];
+            const cityData = realWeatherData.value[locIdx];
+            if (!cityData || !cityData.daily) return fallback;
+
+            // 我們對應的行程日期
+            const tripDates = ["2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03"];
+            const targetDate = tripDates[selectedDateIndex.value];
+            const dateIdx = cityData.daily.time.indexOf(targetDate);
+
+            // 如果 API 提供的未來 14 天內沒有這天，代表超過預測範圍
+            if (dateIdx === -1) {
+                return { location: locNames[locIdx], maxT: '--', minT: '--', pop: '--', icon: 'fa-clock', color: 'text-slate-300', desc: '超過 14 天預報範圍' };
+            }
+
+            const code = cityData.daily.weathercode[dateIdx];
+            const parsed = parseWeatherCode(code);
+
+            return {
+                location: locNames[locIdx],
+                maxT: Math.round(cityData.daily.temperature_2m_max[dateIdx]),
+                minT: Math.round(cityData.daily.temperature_2m_min[dateIdx]),
+                pop: cityData.daily.precipitation_probability_max[dateIdx] || 0,
+                icon: parsed.icon,
+                color: parsed.color,
+                desc: parsed.desc
+            };
         });
 
-        // === 方案 A：MQTT 即時連線 ===
+        // ================= MQTT 即時連線 =================
         const connectToRoom = () => {
             if (isConnected.value) return;
             syncStatusMsg.value = '連線中...';
@@ -596,7 +622,6 @@ createApp({
             }
         };
 
-        // === 方案 B：離線文字代碼 ===
         const generateCode = () => {
             const safePayload = { 
                 i: itineraryData.value, 
@@ -634,29 +659,30 @@ createApp({
             } catch(e) { manualSyncMsg.value = '❌ 代碼錯誤，請確認'; }
         };
 
-        // 初始化
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v21_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v22_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v21_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v22_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v21_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v22_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
-                const savedT = localStorage.getItem('hokkaido_trip_v21_transport');
+                const savedT = localStorage.getItem('hokkaido_trip_v22_transport');
                 if (savedT) transportNotes.value = JSON.parse(savedT);
                 
-                const savedCover = localStorage.getItem('hokkaido_trip_v21_cover');
+                const savedCover = localStorage.getItem('hokkaido_trip_v22_cover');
                 if (savedCover) coverImage.value = savedCover;
             } catch(e) {}
+            
+            // 進入網頁自動抓取真實天氣
+            fetchRealWeather();
         });
 
-        // 監聽變更
         watch([itineraryData, shoppingItems, foodRefs, transportNotes], () => {
-            localStorage.setItem('hokkaido_trip_v21_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v21_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v21_foodRefs', JSON.stringify(foodRefs.value));
-            localStorage.setItem('hokkaido_trip_v21_transport', JSON.stringify(transportNotes.value));
+            localStorage.setItem('hokkaido_trip_v22_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v22_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v22_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v22_transport', JSON.stringify(transportNotes.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { 
