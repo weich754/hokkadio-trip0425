@@ -25,40 +25,105 @@
                 extend: {
                     colors: {
                         'sakura-bg': '#FFF5F8',      
-                        'sakura-pink': '#F48FB1',         
+                        'sakura-pink': '#F48FB1',
+                        'sakura-light': '#FCE4EC',
                         'sakura-dark': '#D81B60',       
-                        'hokkaido-blue': '#64B5F6',        
-                        'spring-green': '#81C784',      
-                        'slate-800': '#1E293B',
+                        'hokkaido-blue': '#90CAF9',        
+                        'matcha-green': '#AED581',      
+                        'japan-brown': '#5D4037', /* 日系深褐，取代死黑 */
+                        'japan-paper': '#FFFDFB', /* 和紙白 */
                     },
-                    animation: { 'fade-in': 'fadeIn 0.2s ease-out', 'zoom-in': 'zoomIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
+                    animation: { 
+                        'fade-in': 'fadeIn 0.3s ease-out', 
+                        'zoom-in': 'zoomIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
+                    }
                 }
             }
         }
     </script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        body { background-color: #FFF5F8; font-family: 'Noto Sans TC', sans-serif; color: #1E293B; -webkit-tap-highlight-color: transparent; }
-        .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(30, 41, 59, 0.1); position: relative; padding-bottom: 90px; }
-        .header-bg { border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; overflow: hidden; z-index: 10; position: relative; box-shadow: 0 4px 15px rgba(244, 143, 177, 0.2); background-color: #cbd5e1; }
-        .header-image-container { width: 100%; height: 220px; position: relative; background-color: #e2e8f0; }
-        .side-tab-bar { position: absolute; bottom: 30px; right: 16px; z-index: 50; display: flex; gap: 8px; }
-        .tab-button { width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(244, 143, 177, 0.3); transition: all 0.2s; background-color: white; color: #F48FB1; }
-        .tab-button.active { background-color: #D81B60; color: white; transform: scale(1.1); }
-        .date-selector-sticky { background-color: white; border-bottom: 1px solid #f1f5f9; z-index: 20; top: 0; position: sticky; }
-        .date-active { background-color: #D81B60 !important; color: white !important; border-color: #D81B60 !important; }
-        .card-shadow { box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05); border: 1px solid #f8fafc; }
-        .note-tag { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #F1F5F9; color: #64748B; font-weight: bold; }
-        .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.3); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        /* 櫻吹雪落下動畫 */
+        @keyframes sakura-fall {
+            0% { transform: translateY(-20px) rotate(0deg) translateX(0px); opacity: 0; }
+            10% { opacity: 0.8; }
+            100% { transform: translateY(280px) rotate(360deg) translateX(60px); opacity: 0; }
+        }
+
+        body { 
+            background-color: #FFF5F8; 
+            font-family: 'Noto Sans TC', sans-serif; 
+            color: #5D4037; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        /* 和紙材質背景 */
+        .app-container { 
+            max-width: 480px; 
+            margin: 0 auto; 
+            min-height: 100vh; 
+            background-color: #FFFDFB; 
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+            box-shadow: 0 0 40px rgba(216, 27, 96, 0.05); 
+            position: relative; 
+            padding-bottom: 90px; 
+        }
+
+        /* 標題改用明體，增添日系文學感 */
+        .font-serif-tc { font-family: 'Noto Serif TC', serif; }
+
+        .header-bg { 
+            border-bottom-left-radius: 40px; 
+            border-bottom-right-radius: 40px; 
+            overflow: hidden; 
+            z-index: 10; 
+            position: relative; 
+            box-shadow: 0 8px 25px rgba(244, 143, 177, 0.25); 
+            background-color: #FCE4EC; 
+        }
+        .header-image-container { width: 100%; height: 240px; position: relative; background-color: #F8BBD0; }
+        
+        .sakura-layer { position: absolute; top: 0; left: 0; w-full; height: 100%; pointer-events: none; z-index: 5; overflow: hidden; }
+        .sakura-petal { 
+            position: absolute; 
+            animation-name: sakura-fall; 
+            animation-timing-function: linear; 
+            animation-iteration-count: infinite; 
+            filter: drop-shadow(0 2px 3px rgba(216,27,96,0.3));
+        }
+
+        .side-tab-bar { position: absolute; bottom: 30px; right: 20px; z-index: 50; display: flex; gap: 10px; }
+        .tab-button { 
+            width: 44px; height: 44px; 
+            border-radius: 9999px; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 4px 12px rgba(216, 27, 96, 0.2); 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            background-color: rgba(255, 255, 255, 0.95); 
+            color: #F48FB1; 
+            backdrop-filter: blur(4px);
+        }
+        .tab-button.active { background-color: #D81B60; color: white; transform: scale(1.15); box-shadow: 0 6px 16px rgba(216, 27, 96, 0.4); }
+        
+        .date-selector-sticky { background-color: rgba(255, 253, 251, 0.95); backdrop-filter: blur(8px); border-bottom: 1px solid #FCE4EC; z-index: 20; top: 0; position: sticky; }
+        .date-active { background: linear-gradient(135deg, #F48FB1 0%, #D81B60 100%) !important; color: white !important; border: none !important; box-shadow: 0 4px 10px rgba(216, 27, 96, 0.3); }
+        
+        .card-shadow { box-shadow: 0 4px 20px rgba(93, 64, 55, 0.05); border: 1px solid #FCE4EC; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        
+        .note-tag { font-size: 10px; padding: 2px 8px; border-radius: 6px; background: #E3F2FD; color: #1565C0; font-weight: bold; border: 1px solid #BBDEFB; }
+        .fab-shadow { box-shadow: 0 4px 15px rgba(216, 27, 96, 0.35); }
+        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
-        .sync-badge { position: absolute; top: env(safe-area-inset-top, 16px); right: 16px; z-index: 50; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; border: 1px solid rgba(255,255,255,0.3); margin-top: 10px; }
+        .image-preview { width: 100%; height: 110px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; border: 1px solid #FCE4EC; }
+        .sync-badge { position: absolute; top: env(safe-area-inset-top, 16px); right: 16px; z-index: 50; background: rgba(93, 64, 55, 0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(6px); cursor: pointer; border: 1px solid rgba(255,255,255,0.2); margin-top: 10px; }
         
         /* 裁切畫面樣式修正 */
-        .cropper-view-box, .cropper-face { border-radius: 12px; } /* 讓裁切框稍微有點圓角 */
+        .cropper-view-box, .cropper-face { border-radius: 12px; }
         .cropper-modal { background-color: rgba(0, 0, 0, 0.85); }
     </style>
 </head>
@@ -69,45 +134,59 @@
         <div class="header-image-container relative">
             <input type="file" id="coverInput" accept="image/*" class="hidden" @change="handleCoverUpload">
             <img :src="coverImage" @error="handleCoverError" class="absolute inset-0 w-full h-full object-cover" alt="北海道賞櫻封面">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-20 pointer-events-none"></div>
             
-            <button @click="triggerCoverUpload" class="absolute top-4 left-4 z-30 bg-black/40 hover:bg-black/60 text-white border border-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-lg flex items-center gap-1">
+            <div class="absolute inset-0 bg-gradient-to-t from-japan-brown/80 via-japan-brown/20 to-transparent z-20 pointer-events-none"></div>
+            
+            <div class="sakura-layer">
+                <div v-for="n in 18" :key="n" class="sakura-petal"
+                     :style="{ 
+                        left: Math.random() * 100 + '%', 
+                        fontSize: (10 + Math.random() * 12) + 'px', 
+                        animationDuration: (6 + Math.random() * 5) + 's', 
+                        animationDelay: (Math.random() * 5) + 's',
+                        opacity: 0.6 + Math.random() * 0.4 
+                     }">
+                    🌸
+                </div>
+            </div>
+
+            <button @click="triggerCoverUpload" class="absolute top-4 left-4 z-30 bg-white/20 hover:bg-white/30 text-white border border-white/40 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1">
                 <i class="fa-solid fa-camera"></i> 更換封面
             </button>
 
             <div @click="showSyncModal = true" class="sync-badge text-white text-xs font-bold flex items-center gap-2 shadow-lg z-30">
-                <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-300'"></i>
-                <span>{{ isConnected ? '已連線同步中' : '雙人同步' }}</span>
+                <i class="fa-solid fa-satellite-dish" :class="isConnected ? 'text-green-400 animate-pulse' : 'text-slate-200'"></i>
+                <span>{{ isConnected ? '連線中' : '同行同步' }}</span>
             </div>
 
-            <div class="absolute bottom-4 left-6 text-white z-30">
-                <h1 class="text-xl font-bold drop-shadow-lg">北海道深度賞櫻行</h1>
-                <p class="text-xs opacity-90 drop-shadow-md mt-1">4.25 - 5.03 | 函館．洞爺湖．札幌</p>
+            <div class="absolute bottom-5 left-6 text-white z-30">
+                <h1 class="text-2xl font-serif-tc font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] tracking-wide">北海道賞櫻之旅</h1>
+                <p class="text-xs opacity-90 drop-shadow-md mt-1.5 tracking-widest"><i class="fa-regular fa-calendar-days mr-1"></i>4.25 - 5.03 | 函館．洞爺湖．札幌</p>
             </div>
         </div>
         
         <div class="side-tab-bar">
             <button @click="currentTab = 'itinerary'" :class="{'active': currentTab === 'itinerary'}" class="tab-button"><i class="fa-solid fa-calendar-day"></i></button>
             <button @click="currentTab = 'info'" :class="{'active': currentTab === 'info'}" class="tab-button"><i class="fa-solid fa-utensils"></i></button>
-            <button @click="currentTab = 'shopping'" :class="{'active': currentTab === 'shopping'}" class="tab-button"><i class="fa-solid fa-bag-shopping"></i></button>
+            <button @click="currentTab = 'shopping'" :class="{'active': currentTab === 'shopping'}" class="tab-button"><i class="fa-solid fa-gift"></i></button>
         </div>
     </div>
 
     <div v-if="enlargedImage" @click="enlargedImage = null" class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in cursor-zoom-out">
-        <img :src="enlargedImage" @click.stop="null" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-zoom-in">
-        <button @click="enlargedImage = null" class="absolute top-6 right-6 text-white bg-white/20 hover:bg-red-500 w-10 h-10 rounded-full flex items-center justify-center transition-colors text-xl shadow-lg">
+        <img :src="enlargedImage" @click.stop="null" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-zoom-in border border-white/10">
+        <button @click="enlargedImage = null" class="absolute top-6 right-6 text-white bg-white/20 hover:bg-sakura-dark w-10 h-10 rounded-full flex items-center justify-center transition-colors text-xl shadow-lg">
             <i class="fa-solid fa-xmark"></i>
         </button>
     </div>
 
-    <div v-if="showSyncModal" class="fixed inset-0 bg-slate-900/70 z-[5000] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
-            <button @click="showSyncModal = false" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h3 class="font-bold text-lg mb-2 text-center text-slate-800"><i class="fa-solid fa-heart text-sakura-pink mr-2 text-xl"></i>專屬雙人連線房</h3>
+    <div v-if="showSyncModal" class="fixed inset-0 bg-japan-brown/70 z-[5000] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+        <div class="bg-japan-paper rounded-3xl w-full max-w-sm p-6 shadow-2xl relative overflow-hidden border border-sakura-pink/20">
+            <button @click="showSyncModal = false" class="absolute top-4 right-5 text-stone-400 hover:text-sakura-dark"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="font-bold text-lg mb-2 text-center text-japan-brown"><i class="fa-solid fa-heart text-sakura-pink mr-2 text-xl"></i>專屬雙人連線房</h3>
             
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-center mt-4">
-                <p class="text-xs font-bold text-slate-500 mb-2">【 方案 A：即時自動連線 】</p>
-                <div class="w-full text-center text-3xl font-mono font-bold tracking-widest text-sakura-dark bg-white border-2 border-sakura-pink/30 rounded-xl p-3 mb-3 shadow-inner">
+            <div class="bg-sakura-bg/50 p-4 rounded-xl border border-sakura-pink/30 mb-4 text-center mt-4">
+                <p class="text-xs font-bold text-stone-500 mb-2">【 方案 A：即時自動連線 】</p>
+                <div class="w-full text-center text-3xl font-mono font-bold tracking-widest text-sakura-dark bg-white border-2 border-sakura-pink/40 rounded-xl p-3 mb-3 shadow-inner">
                     041887
                 </div>
                 
@@ -119,35 +198,35 @@
                     <button @click="forcePush" class="w-full py-2.5 rounded-xl bg-sakura-dark text-white font-bold text-xs shadow-md hover:bg-pink-600 transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-paper-plane"></i> 強制覆蓋對方資料
                     </button>
-                    <button @click="disconnectRoom" class="w-full py-2.5 rounded-xl bg-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-300 transition-all">
+                    <button @click="disconnectRoom" class="w-full py-2.5 rounded-xl bg-stone-200 text-stone-600 font-bold text-xs hover:bg-stone-300 transition-all">
                         斷開連線
                     </button>
                 </div>
                 
-                <div v-if="syncStatusMsg" class="mt-2 text-center text-[10px] font-bold px-2 py-1 rounded transition-colors" :class="isConnected ? 'bg-green-50 text-green-600' : (syncStatusMsg.includes('❌') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-hokkaido-blue')">
+                <div v-if="syncStatusMsg" class="mt-2 text-center text-[10px] font-bold px-2 py-1 rounded transition-colors" :class="isConnected ? 'bg-green-50 text-matcha-green' : (syncStatusMsg.includes('❌') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-hokkaido-blue')">
                     {{ syncStatusMsg }}
                 </div>
             </div>
 
-            <div class="relative flex items-center py-1">
-                <div class="flex-grow border-t border-slate-200"></div>
-                <span class="flex-shrink-0 mx-4 text-slate-300 text-[10px] font-bold">網路不穩時的備案</span>
-                <div class="flex-grow border-t border-slate-200"></div>
+            <div class="relative flex items-center py-2">
+                <div class="flex-grow border-t border-stone-200"></div>
+                <span class="flex-shrink-0 mx-4 text-stone-400 text-[10px] font-bold">網路不穩時的備案</span>
+                <div class="flex-grow border-t border-stone-200"></div>
             </div>
 
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-2">
-                <p class="text-xs font-bold text-slate-500 mb-3 text-center">【 方案 B：手動代碼傳送 】</p>
+            <div class="bg-stone-50 p-4 rounded-xl border border-stone-100 mt-2">
+                <p class="text-xs font-bold text-stone-500 mb-3 text-center">【 方案 B：手動代碼傳送 】</p>
                 <div class="flex gap-2 mb-3">
-                    <button @click="generateCode" class="flex-1 py-2.5 rounded-xl bg-green-500 text-white font-bold text-xs shadow-md hover:bg-green-600 transition-all flex justify-center items-center gap-1">
+                    <button @click="generateCode" class="flex-1 py-2.5 rounded-xl bg-matcha-green text-white font-bold text-xs shadow-md hover:opacity-90 transition-all flex justify-center items-center gap-1">
                         <i class="fa-solid fa-copy"></i> 複製行程
                     </button>
                 </div>
-                <textarea v-model="importCode" placeholder="請貼上阿鈺傳來的代碼..." class="w-full h-12 bg-white rounded-xl p-2 text-[10px] outline-none border border-slate-200 focus:border-sakura-pink mb-2 resize-none"></textarea>
-                <button @click="importData" :disabled="!importCode" class="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs shadow-md disabled:opacity-50 hover:bg-slate-700 transition-all">
+                <textarea v-model="importCode" placeholder="請貼上阿鈺傳來的代碼..." class="w-full h-12 bg-white rounded-xl p-2 text-[10px] outline-none border border-stone-200 focus:border-sakura-pink mb-2 resize-none"></textarea>
+                <button @click="importData" :disabled="!importCode" class="w-full py-2.5 rounded-xl bg-japan-brown text-white font-bold text-xs shadow-md disabled:opacity-50 hover:bg-stone-700 transition-all">
                     <i class="fa-solid fa-download"></i> 立即手動更新
                 </button>
-                <textarea id="hiddenCodeBox" v-model="generatedCode" class="w-full h-10 mt-2 text-[10px] text-slate-400 p-2 border rounded-lg bg-white hidden focus:block" readonly></textarea>
-                <div v-if="manualSyncMsg" class="mt-2 text-center text-[10px] font-bold text-green-600 animate-pulse">
+                <textarea id="hiddenCodeBox" v-model="generatedCode" class="w-full h-10 mt-2 text-[10px] text-stone-400 p-2 border rounded-lg bg-white hidden focus:block" readonly></textarea>
+                <div v-if="manualSyncMsg" class="mt-2 text-center text-[10px] font-bold text-matcha-green animate-pulse">
                     {{ manualSyncMsg }}
                 </div>
             </div>
@@ -156,103 +235,110 @@
 
     <main class="p-4 relative z-10">
         <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
-            <div class="flex overflow-x-auto hide-scrollbar space-x-2 pb-4 mb-4 date-selector-sticky -mx-4 px-4 pt-2">
+            <div class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-3 date-selector-sticky -mx-4 px-5 pt-3">
                 <div v-for="(day, index) in dates" :key="index" @click="selectedDateIndex = index"
-                     class="flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center cursor-pointer border transition-all duration-200"
-                     :class="selectedDateIndex === index ? 'date-active shadow-md scale-105' : 'bg-white text-slate-400 border-slate-100'">
-                    <span class="text-[10px] font-bold uppercase">{{ day.weekday }}</span>
-                    <span class="text-sm font-bold">{{ day.date.split('月')[1].replace('日','') }}</span>
+                     class="flex-shrink-0 w-14 h-[72px] rounded-2xl flex flex-col items-center justify-center cursor-pointer border transition-all duration-300 relative"
+                     :class="selectedDateIndex === index ? 'date-active scale-105' : 'bg-white text-stone-400 border-sakura-pink/20 hover:bg-sakura-bg'">
+                    <span class="text-[10px] font-bold uppercase tracking-wider">{{ day.weekday }}</span>
+                    <span class="text-sm font-bold mt-0.5">{{ day.date.split('月')[1].replace('日','') }}</span>
+                    <i v-if="selectedDateIndex === index" class="fa-solid fa-seedling absolute -top-2 text-matcha-green text-xs drop-shadow-sm"></i>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 card-shadow mb-4 flex items-center justify-between border border-blue-100 animate-fade-in">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-hokkaido-blue shadow-sm">
+            <div class="bg-white rounded-2xl p-4 card-shadow mb-5 flex items-center justify-between border-l-4 border-l-hokkaido-blue animate-fade-in relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-5"><i class="fa-solid fa-cloud text-8xl"></i></div>
+                <div class="flex items-center gap-3 relative z-10">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-hokkaido-blue shadow-inner border border-blue-100">
                         <i class="fa-solid fa-location-dot"></i>
                     </div>
                     <div>
-                        <span class="text-sm font-bold text-slate-700">{{ currentWeather.location }}</span>
-                        <p class="text-[10px] text-slate-500 font-bold mt-0.5 tracking-wider">{{ currentWeather.desc }}</p>
+                        <span class="text-sm font-bold text-japan-brown">{{ currentWeather.location }}</span>
+                        <p class="text-[10px] text-stone-500 font-bold mt-0.5 tracking-wider">{{ currentWeather.desc }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 relative z-10">
                     <div class="flex flex-col items-end">
-                        <span class="text-[10px] font-bold" :class="currentWeather.pop > 40 ? 'text-blue-500' : 'text-slate-400'">降雨機率 {{ currentWeather.pop }}{{ currentWeather.pop !== '--' ? '%' : '' }}</span>
-                        <span class="text-sm font-bold text-slate-700">{{ currentWeather.minT }}° ~ {{ currentWeather.maxT }}°</span>
+                        <span class="text-[10px] font-bold" :class="currentWeather.pop > 40 ? 'text-hokkaido-blue' : 'text-stone-400'">降雨 {{ currentWeather.pop }}{{ currentWeather.pop !== '--' ? '%' : '' }}</span>
+                        <span class="text-sm font-bold text-japan-brown">{{ currentWeather.minT }}° ~ {{ currentWeather.maxT }}°</span>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
-                        <i class="fa-solid text-xl" :class="[currentWeather.icon, currentWeather.color]"></i>
+                    <div class="w-10 h-10 flex items-center justify-center">
+                        <i class="fa-solid text-2xl drop-shadow-sm" :class="[currentWeather.icon, currentWeather.color]"></i>
                     </div>
                 </div>
             </div>
 
             <div class="space-y-4">
                 <div v-for="(item, idx) in currentDayItinerary" :key="idx" class="relative">
-                    <div class="bg-white rounded-2xl p-4 card-shadow flex items-start space-x-4 relative overflow-hidden">
-                        <div class="flex flex-col items-center min-w-[50px]">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm mb-1" :class="getCategoryColor(item.category)">
+                    <div v-if="idx > 0" class="absolute -top-4 left-[35px] w-0.5 h-4 bg-sakura-pink/30"></div>
+                    
+                    <div class="bg-white rounded-2xl p-4 card-shadow flex items-start space-x-4 relative overflow-hidden group">
+                        <div class="flex flex-col items-center min-w-[50px] relative z-10">
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm mb-1.5 shadow-md border border-white/50" :class="getCategoryColor(item.category)">
                                 <i :class="getCategoryIcon(item.category)"></i>
                             </div>
-                            <span class="text-[10px] font-bold text-slate-400">{{ item.time }}</span>
+                            <span class="text-[10px] font-bold text-stone-400">{{ item.time }}</span>
                         </div>
-                        <div class="flex-1 pr-10">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="font-bold text-slate-800 leading-tight">{{ item.name }}</h3>
-                                <span v-if="item.seat" class="note-tag bg-blue-50 text-blue-500">{{ item.seat }}</span>
+                        <div class="flex-1 pr-10 relative z-10 py-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                                <h3 class="font-bold text-japan-brown leading-tight text-[15px]">{{ item.name }}</h3>
+                                <span v-if="item.seat" class="note-tag">{{ item.seat }}</span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1 whitespace-pre-line">{{ item.note }}</p>
+                            <p class="text-[11px] text-stone-500 whitespace-pre-line leading-relaxed">{{ item.note }}</p>
                         </div>
                         
-                        <div class="absolute top-4 right-3 flex flex-col space-y-2">
-                            <button @click.stop="openMap(item.address || item.name)" class="w-7 h-7 bg-sakura-pink/10 text-sakura-pink rounded-full flex items-center justify-center text-xs hover:bg-sakura-pink hover:text-white transition-colors">
+                        <div class="absolute top-4 right-3 flex flex-col space-y-2 z-10">
+                            <button @click.stop="openMap(item.address || item.name)" class="w-8 h-8 bg-sakura-light text-sakura-dark rounded-full flex items-center justify-center text-xs hover:bg-sakura-pink hover:text-white transition-all shadow-sm">
                                 <i class="fa-solid fa-location-arrow"></i>
                             </button>
-                            <button @click.stop="editItem(item, idx)" class="w-7 h-7 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors">
+                            <button @click.stop="editItem(item, idx)" class="w-8 h-8 bg-stone-50 text-stone-400 rounded-full flex items-center justify-center text-xs hover:bg-stone-200 transition-all shadow-sm">
                                 <i class="fa-solid fa-pencil"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div v-if="currentDayItinerary.length === 0" class="text-center py-16 text-slate-300">
-                    <i class="fa-solid fa-map-location-dot text-5xl mb-3 opacity-20"></i>
-                    <p class="text-sm">本日尚無行程</p>
+                <div v-if="currentDayItinerary.length === 0" class="text-center py-16 text-sakura-pink/40">
+                    <i class="fa-solid fa-torii-gate text-5xl mb-3 opacity-60"></i>
+                    <p class="text-sm font-bold">本日尚無行程</p>
                 </div>
             </div>
         </div>
 
         <div v-if="currentTab === 'info'" class="space-y-6 animate-fade-in">
-            <div class="bg-white rounded-2xl p-5 card-shadow">
-                <h3 class="font-bold text-sakura-dark mb-4 flex items-center justify-between">
-                    <span><i class="fa-solid fa-star mr-2"></i> 美食口袋名單</span>
+            <div class="bg-white rounded-3xl p-6 card-shadow border-t-4 border-t-sakura-pink">
+                <h3 class="font-bold text-japan-brown mb-5 flex items-center justify-between font-serif-tc text-lg">
+                    <span><i class="fa-solid fa-bowl-food mr-2 text-sakura-dark"></i> 美食名鑑</span>
                 </h3>
-                <div class="space-y-5">
-                    <div v-for="(list, title) in foodRefs" :key="title">
-                        <div class="flex justify-between items-center mb-2">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest border-l-2 border-sakura-pink pl-2">{{ title }}</p>
-                            <button @click="addFoodItem(title)" class="text-sakura-pink text-xs font-bold bg-sakura-pink/10 px-2 py-1 rounded hover:bg-sakura-pink hover:text-white transition-colors">+ 新增</button>
+                <div class="space-y-6">
+                    <div v-for="(list, title) in foodRefs" :key="title" class="relative">
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-[11px] font-bold text-stone-500 uppercase tracking-widest flex items-center">
+                                <span class="w-1.5 h-1.5 rounded-full bg-matcha-green mr-2"></span>{{ title }}
+                            </p>
+                            <button @click="addFoodItem(title)" class="text-sakura-dark text-[10px] font-bold bg-sakura-bg px-2.5 py-1 rounded-full hover:bg-sakura-pink hover:text-white transition-colors border border-sakura-pink/20">+ 追加</button>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <span v-for="(food, fIdx) in list" :key="fIdx" class="bg-slate-50 text-slate-600 text-xs pl-3 pr-1 py-1.5 rounded-lg border border-slate-100 flex items-center gap-2">
+                        <div class="flex flex-wrap gap-2.5">
+                            <span v-for="(food, fIdx) in list" :key="fIdx" class="bg-stone-50 text-japan-brown text-xs pl-3 pr-1 py-1.5 rounded-xl border border-stone-200 flex items-center gap-2 shadow-sm">
                                 {{ food }}
-                                <button @click="removeFoodItem(title, fIdx)" class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-400 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+                                <button @click="removeFoodItem(title, fIdx)" class="w-5 h-5 flex items-center justify-center text-stone-300 hover:text-red-400 rounded-full transition-colors"><i class="fa-solid fa-xmark"></i></button>
                             </span>
-                            <span v-if="list.length === 0" class="text-xs text-slate-300 italic">尚無資料</span>
+                            <span v-if="list.length === 0" class="text-xs text-stone-300 italic">尚無資料</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="bg-slate-800 rounded-2xl p-5 text-white shadow-lg relative">
-                <h3 class="font-bold mb-3 flex items-center justify-between text-sm">
-                    <span class="flex items-center"><i class="fa-solid fa-train mr-2 text-hokkaido-blue"></i> JR & 交通備註</span>
-                    <button @click="addTransportNote" class="bg-white/20 px-2 py-1 rounded text-xs hover:bg-white/30 transition-colors shadow-sm">+ 新增</button>
+            <div class="bg-gradient-to-br from-japan-brown to-stone-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10"><i class="fa-solid fa-train text-8xl"></i></div>
+                <h3 class="font-bold mb-4 flex items-center justify-between text-base font-serif-tc relative z-10">
+                    <span class="flex items-center"><i class="fa-solid fa-ticket mr-2 text-hokkaido-blue"></i> 乘車備忘錄</span>
+                    <button @click="addTransportNote" class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold hover:bg-white/20 transition-colors border border-white/20">+ 新增</button>
                 </h3>
-                <div class="text-xs space-y-2 opacity-90">
-                    <div v-for="(note, nIdx) in transportNotes" :key="nIdx" class="flex justify-between items-start group border-b border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                        <p class="flex-1 whitespace-pre-line leading-relaxed">• {{ note }}</p>
-                        <button @click="removeTransportNote(nIdx)" class="text-white/40 hover:text-red-400 ml-2 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded"><i class="fa-solid fa-xmark"></i></button>
+                <div class="text-[11px] space-y-3 opacity-95 relative z-10">
+                    <div v-for="(note, nIdx) in transportNotes" :key="nIdx" class="flex justify-between items-start group border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                        <p class="flex-1 whitespace-pre-line leading-relaxed"><i class="fa-solid fa-caret-right text-hokkaido-blue mr-2"></i>{{ note }}</p>
+                        <button @click="removeTransportNote(nIdx)" class="text-white/30 hover:text-red-400 ml-3 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded transition-colors"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                    <div v-if="transportNotes.length === 0" class="text-center text-white/50 py-2 italic">尚無交通備註</div>
+                    <div v-if="transportNotes.length === 0" class="text-center text-white/40 py-4 italic">尚無乘車備註</div>
                 </div>
             </div>
         </div>
@@ -260,39 +346,41 @@
         <div v-if="currentTab === 'shopping'" class="animate-fade-in">
             <input type="file" id="cameraInput" accept="image/*" class="hidden" @change="handleImageUpload">
             
-            <div class="grid grid-cols-2 gap-3">
-                <div v-for="(item, sIdx) in shoppingItems" :key="sIdx" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative group flex flex-col overflow-hidden">
+            <div class="grid grid-cols-2 gap-3.5">
+                <div v-for="(item, sIdx) in shoppingItems" :key="sIdx" class="bg-white p-2.5 rounded-2xl border border-sakura-pink/20 shadow-sm relative group flex flex-col overflow-hidden">
                     <div v-if="item.image" class="relative group">
-                        <img :src="item.image" @click="enlargedImage = item.image" class="image-preview bg-slate-50 cursor-pointer object-cover hover:opacity-90 transition-opacity">
-                        <button @click.stop="removeImage(sIdx)" class="absolute bottom-2 right-2 bg-slate-800/80 text-white w-7 h-7 rounded-full text-xs flex items-center justify-center hover:bg-red-500 shadow-md transition-colors">
+                        <img :src="item.image" @click="enlargedImage = item.image" class="image-preview cursor-pointer hover:opacity-90 transition-opacity">
+                        <button @click.stop="removeImage(sIdx)" class="absolute bottom-2 right-2 bg-japan-brown/80 text-white w-7 h-7 rounded-full text-xs flex items-center justify-center hover:bg-red-500 shadow-md transition-colors backdrop-blur-sm">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
-                    <div v-else @click="triggerCamera(sIdx)" class="w-full h-[100px] bg-slate-50 rounded-xl mb-2 flex flex-col items-center justify-center text-slate-300 cursor-pointer hover:bg-slate-100 transition-colors border border-dashed border-slate-200">
-                        <i class="fa-solid fa-camera text-xl mb-1"></i>
-                        <span class="text-[10px]">選取/拍攝</span>
+                    <div v-else @click="triggerCamera(sIdx)" class="w-full h-[110px] bg-sakura-bg/50 rounded-xl mb-2 flex flex-col items-center justify-center text-sakura-pink cursor-pointer hover:bg-sakura-light transition-colors border border-dashed border-sakura-pink/40">
+                        <i class="fa-solid fa-camera-retro text-2xl mb-1.5 opacity-80"></i>
+                        <span class="text-[10px] font-bold opacity-80">選取圖片</span>
                     </div>
                     
-                    <div class="text-center text-sm font-bold text-slate-700 mt-auto">{{ item.text }}</div>
+                    <div class="text-center text-[13px] font-bold text-japan-brown mt-1 mb-1">{{ item.text }}</div>
                     
-                    <button @click="removeShoppingItem(sIdx)" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs shadow-md"><i class="fa-solid fa-xmark"></i></button>
+                    <button @click="removeShoppingItem(sIdx)" class="absolute -top-1.5 -right-1.5 bg-red-400 text-white w-6 h-6 rounded-full text-[10px] shadow-md border-2 border-white"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
-            <button @click="addShoppingItem" class="w-full mt-4 py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-sm font-bold hover:border-sakura-pink hover:text-sakura-pink transition-all bg-white">+ 新增爆買項目</button>
+            <button @click="addShoppingItem" class="w-full mt-5 py-4 border-2 border-dashed border-sakura-pink/40 rounded-2xl text-sakura-dark text-sm font-bold hover:bg-sakura-bg transition-all bg-white shadow-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus"></i> 新增伴手禮清單
+            </button>
         </div>
     </main>
 
-    <button v-if="currentTab === 'itinerary'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-sakura-dark rounded-full fab-shadow text-white text-2xl flex items-center justify-center hover:scale-110 transition-transform z-[2000]">
+    <button v-if="currentTab === 'itinerary'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-sakura-pink to-sakura-dark rounded-full fab-shadow text-white text-2xl flex items-center justify-center hover:scale-110 transition-transform z-[2000] border-2 border-white/20">
         <i class="fa-solid fa-plus"></i>
     </button>
 
-    <div v-if="showModal" class="fixed inset-0 bg-slate-900/60 z-[5000] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl overflow-y-auto max-h-[85vh]">
-            <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? '編輯行程' : '新增行程' }}</h3>
+    <div v-if="showModal" class="fixed inset-0 bg-japan-brown/70 z-[5000] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+        <div class="bg-japan-paper rounded-3xl w-full max-w-sm p-6 shadow-2xl overflow-y-auto max-h-[85vh] border border-sakura-pink/20">
+            <h3 class="font-serif-tc font-bold text-xl mb-5 text-center text-japan-brown">{{ isEditMode ? '編輯行程' : '新增行程' }}</h3>
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
-                    <input v-model="newItem.time" type="text" placeholder="時間 (09:00)" class="bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
-                    <select v-model="newItem.category" class="bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
+                    <input v-model="newItem.time" type="text" placeholder="時間 (09:00)" class="bg-white rounded-xl p-3 text-sm outline-none border border-stone-200 focus:border-sakura-pink focus:ring-1 focus:ring-sakura-pink transition-all shadow-inner">
+                    <select v-model="newItem.category" class="bg-white rounded-xl p-3 text-sm outline-none border border-stone-200 focus:border-sakura-pink shadow-inner text-japan-brown font-bold">
                         <option value="sightseeing">景點</option>
                         <option value="food">美食</option>
                         <option value="transport">交通</option>
@@ -301,14 +389,14 @@
                         <option value="shopping">購物</option>
                     </select>
                 </div>
-                <input v-model="newItem.name" placeholder="名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
-                <input v-model="newItem.seat" placeholder="座位/代碼 (選填)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100">
-                <textarea v-model="newItem.note" placeholder="備註細節" rows="3" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-100"></textarea>
+                <input v-model="newItem.name" placeholder="行程名稱" class="w-full bg-white rounded-xl p-3 text-sm outline-none border border-stone-200 focus:border-sakura-pink focus:ring-1 focus:ring-sakura-pink transition-all shadow-inner font-bold text-japan-brown">
+                <input v-model="newItem.seat" placeholder="座位/代碼 (選填)" class="w-full bg-white rounded-xl p-3 text-sm outline-none border border-stone-200 focus:border-sakura-pink transition-all shadow-inner">
+                <textarea v-model="newItem.note" placeholder="備註細節" rows="3" class="w-full bg-white rounded-xl p-3 text-sm outline-none border border-stone-200 focus:border-sakura-pink transition-all shadow-inner resize-none"></textarea>
             </div>
             <div class="flex space-x-3 mt-6">
-                <button @click="showModal = false" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm flex-1">取消</button>
-                <button v-if="isEditMode" @click="removeItem" class="py-3 rounded-xl bg-red-100 text-red-500 font-bold text-sm w-12"><i class="fa-solid fa-trash"></i></button>
-                <button @click="saveItem" class="py-3 rounded-xl bg-sakura-dark text-white font-bold text-sm shadow-lg flex-1">儲存</button>
+                <button @click="showModal = false" class="py-3 rounded-xl bg-stone-100 text-stone-500 font-bold text-sm flex-1 hover:bg-stone-200 transition-colors">取消</button>
+                <button v-if="isEditMode" @click="removeItem" class="py-3 rounded-xl bg-red-50 text-red-500 font-bold text-sm w-12 border border-red-100 hover:bg-red-100 transition-colors"><i class="fa-solid fa-trash"></i></button>
+                <button @click="saveItem" class="py-3 rounded-xl bg-sakura-dark text-white font-bold text-sm shadow-[0_4px_10px_rgba(216,27,96,0.3)] flex-1 hover:bg-pink-700 transition-colors">儲存</button>
             </div>
         </div>
     </div>
@@ -318,8 +406,8 @@
             <img id="cropTarget" :src="cropImageSrc" class="max-w-full max-h-full block opacity-0">
         </div>
         
-        <div class="h-24 bg-slate-900 border-t border-slate-800 flex justify-between items-center px-6 pb-[env(safe-area-inset-bottom)]">
-            <button @click="closeCropModal" class="text-slate-300 font-bold p-2 text-sm hover:text-white transition-colors">取消</button>
+        <div class="h-24 bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-6 pb-[env(safe-area-inset-bottom)]">
+            <button @click="closeCropModal" class="text-zinc-400 font-bold p-2 text-sm hover:text-white transition-colors">取消</button>
             
             <button @click="rotateCropImage" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors shadow-inner">
                 <i class="fa-solid fa-rotate-right"></i>
@@ -359,7 +447,7 @@ createApp({
         // ================= 專業裁切編輯器邏輯 (Cropper.js) =================
         const showCropModal = ref(false);
         const cropImageSrc = ref('');
-        const currentCropType = ref(''); // 'shopping' 或 'cover'
+        const currentCropType = ref('');
         let cropper = null;
 
         const openCropper = (src, type) => {
@@ -371,71 +459,54 @@ createApp({
                 const imageElement = document.getElementById('cropTarget');
                 if (cropper) cropper.destroy();
                 
-                // 初始化裁切器
                 cropper = new Cropper(imageElement, {
-                    // 如果是封面照則鎖定 16:9，如果是購物清單則鎖定正方形 1:1
                     aspectRatio: type === 'cover' ? 16 / 9 : 1,
-                    viewMode: 1, // 限制裁切框不能超出圖片邊界
-                    dragMode: 'move', // 允許使用者用手指「拖曳、平移」整張圖片
+                    viewMode: 1, 
+                    dragMode: 'move', 
                     autoCropArea: 0.9,
                     restore: false,
-                    guides: true, // 顯示九宮格輔助線
+                    guides: true, 
                     center: true,
                     highlight: false,
-                    cropBoxMovable: false, // 固定裁切框，讓使用者滑動圖片 (更符合手機直覺)
-                    cropBoxResizable: false, // 禁止改變比例
+                    cropBoxMovable: false, 
+                    cropBoxResizable: false, 
                     toggleDragModeOnDblclick: false,
                 });
             });
         };
 
-        const rotateCropImage = () => {
-            if (cropper) cropper.rotate(90);
-        };
+        const rotateCropImage = () => { if (cropper) cropper.rotate(90); };
 
         const confirmCrop = () => {
             if (!cropper) return;
-            
-            // 取得裁切後的圖片 Canvas (自動壓縮寬度)
             const canvas = cropper.getCroppedCanvas({
                 width: currentCropType.value === 'cover' ? 1200 : 800,
                 height: currentCropType.value === 'cover' ? Math.round(1200 * 9 / 16) : 800
             });
-            
             const base64Str = canvas.toDataURL('image/jpeg', 0.8);
 
-            // 判斷是要存到封面還是購物清單
             if (currentCropType.value === 'cover') {
                 coverImage.value = base64Str;
-                localStorage.setItem('hokkaido_trip_v24_cover', base64Str);
+                localStorage.setItem('hokkaido_trip_v25_cover', base64Str);
             } else if (currentCropType.value === 'shopping' && activeUploadIdx.value !== null) {
                 shoppingItems.value[activeUploadIdx.value].image = base64Str;
             }
-
             closeCropModal();
         };
 
         const closeCropModal = () => {
             showCropModal.value = false;
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-            // 釋放記憶體中的預覽網址
-            if (cropImageSrc.value && cropImageSrc.value.startsWith('blob:')) {
-                URL.revokeObjectURL(cropImageSrc.value);
-            }
+            if (cropper) { cropper.destroy(); cropper = null; }
+            if (cropImageSrc.value && cropImageSrc.value.startsWith('blob:')) { URL.revokeObjectURL(cropImageSrc.value); }
             cropImageSrc.value = '';
         };
 
-        // ================= 改寫上傳邏輯，將圖片送進裁切器 =================
         const handleImageUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            // 建立高效能的 Blob URL 交給裁切器
             const objectUrl = URL.createObjectURL(file);
             openCropper(objectUrl, 'shopping');
-            event.target.value = ''; // 清空 input 確保下次可選同一張圖
+            event.target.value = ''; 
         };
 
         const handleCoverUpload = (event) => {
@@ -554,9 +625,7 @@ createApp({
         const saveItem = () => { if (isEditMode.value) { itineraryData.value[selectedDateIndex.value][editingIdx.value] = { ...newItem.value }; } else { itineraryData.value[selectedDateIndex.value].push({ ...newItem.value }); } showModal.value = false; };
         const removeItem = () => { itineraryData.value[selectedDateIndex.value].splice(editingIdx.value, 1); showModal.value = false; };
         
-        const openMap = (q) => { 
-            if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); 
-        };
+        const openMap = (q) => { if (q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
 
         const addFoodItem = (category) => { const res = prompt(`請輸入要新增至【${category}】的項目：`); if (res && res.trim() !== '') foodRefs.value[category].push(res.trim()); };
         const removeFoodItem = (category, idx) => { if (confirm('確定要刪除這個口袋名單嗎？')) foodRefs.value[category].splice(idx, 1); };
@@ -564,13 +633,21 @@ createApp({
         const addTransportNote = () => { const res = prompt("請輸入交通備註或 JR 提醒事項："); if (res && res.trim() !== '') transportNotes.value.push(res.trim()); };
         const removeTransportNote = (idx) => { if (confirm('確定要刪除這條交通備註嗎？')) transportNotes.value.splice(idx, 1); };
 
-        const addShoppingItem = () => { const res = prompt("請輸入爆買項目名稱："); if (res && res.trim() !== '') shoppingItems.value.push({ text: res.trim(), image: null }); };
+        const addShoppingItem = () => { const res = prompt("請輸入伴手禮名稱："); if (res && res.trim() !== '') shoppingItems.value.push({ text: res.trim(), image: null }); };
         const removeShoppingItem = (idx) => { if (confirm('確定要刪除這個購物項目嗎？')) shoppingItems.value.splice(idx, 1); };
         const triggerCamera = (idx) => { activeUploadIdx.value = idx; document.getElementById('cameraInput').click(); };
         const removeImage = (idx) => { shoppingItems.value[idx].image = null; };
 
-        const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
-        const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
+        // 使用更具日系質感的色彩配色
+        const getCategoryColor = (c) => ({ 
+            flight: 'bg-hokkaido-blue', 
+            transport: 'bg-japan-brown', 
+            food: 'bg-sakura-dark', 
+            accommodation: 'bg-stone-500', 
+            sightseeing: 'bg-matcha-green', 
+            shopping: 'bg-yellow-500' 
+        }[c]);
+        const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera-retro', shopping: 'fa-solid fa-gift' }[c]);
 
         // ================= 最新真實天氣 API (Open-Meteo) =================
         const realWeatherData = ref(null);
@@ -591,19 +668,19 @@ createApp({
 
         const parseWeatherCode = (code) => {
             if (code === 0) return { icon: 'fa-sun', color: 'text-orange-400', desc: '晴朗' };
-            if (code === 1 || code === 2) return { icon: 'fa-cloud-sun', color: 'text-slate-500', desc: '多雲時晴' };
-            if (code === 3) return { icon: 'fa-cloud', color: 'text-slate-400', desc: '陰天' };
-            if (code === 45 || code === 48) return { icon: 'fa-smog', color: 'text-slate-400', desc: '起霧' };
-            if (code >= 51 && code <= 55) return { icon: 'fa-cloud-rain', color: 'text-blue-400', desc: '毛毛雨' };
+            if (code === 1 || code === 2) return { icon: 'fa-cloud-sun', color: 'text-stone-400', desc: '多雲時晴' };
+            if (code === 3) return { icon: 'fa-cloud', color: 'text-stone-400', desc: '陰天' };
+            if (code === 45 || code === 48) return { icon: 'fa-smog', color: 'text-stone-400', desc: '起霧' };
+            if (code >= 51 && code <= 55) return { icon: 'fa-cloud-rain', color: 'text-hokkaido-blue', desc: '毛毛雨' };
             if (code >= 61 && code <= 65) return { icon: 'fa-cloud-showers-heavy', color: 'text-blue-500', desc: '陣雨' };
             if (code >= 71 && code <= 77) return { icon: 'fa-snowflake', color: 'text-blue-300', desc: '降雪' };
             if (code >= 80 && code <= 82) return { icon: 'fa-cloud-showers-water', color: 'text-blue-600', desc: '大雨' };
             if (code >= 95 && code <= 99) return { icon: 'fa-bolt', color: 'text-yellow-500', desc: '雷陣雨' };
-            return { icon: 'fa-cloud', color: 'text-slate-400', desc: '預報載入中' };
+            return { icon: 'fa-cloud', color: 'text-stone-300', desc: '預報載入中' };
         };
 
         const currentWeather = computed(() => {
-            const fallback = { location: '更新即時氣象中...', maxT: '-', minT: '-', pop: '-', icon: 'fa-spinner', color: 'text-slate-300 animate-spin', desc: '連線中' };
+            const fallback = { location: '更新即時氣象中...', maxT: '-', minT: '-', pop: '-', icon: 'fa-spinner', color: 'text-stone-300 animate-spin', desc: '連線中' };
             if (!realWeatherData.value) return fallback;
 
             const locIndexMap = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2 };
@@ -616,9 +693,7 @@ createApp({
             const targetDate = tripDates[selectedDateIndex.value];
             const dateIdx = cityData.daily.time.indexOf(targetDate);
 
-            if (dateIdx === -1) {
-                return { location: locNames[locIdx], maxT: '--', minT: '--', pop: '--', icon: 'fa-clock', color: 'text-slate-300', desc: '超過 14 天預報範圍' };
-            }
+            if (dateIdx === -1) { return { location: locNames[locIdx], maxT: '--', minT: '--', pop: '--', icon: 'fa-clock', color: 'text-stone-300', desc: '超過預報範圍' }; }
 
             const code = cityData.daily.weathercode[dateIdx];
             const parsed = parseWeatherCode(code);
@@ -628,9 +703,7 @@ createApp({
                 maxT: Math.round(cityData.daily.temperature_2m_max[dateIdx]),
                 minT: Math.round(cityData.daily.temperature_2m_min[dateIdx]),
                 pop: cityData.daily.precipitation_probability_max[dateIdx] || 0,
-                icon: parsed.icon,
-                color: parsed.color,
-                desc: parsed.desc
+                icon: parsed.icon, color: parsed.color, desc: parsed.desc
             };
         });
 
@@ -669,16 +742,12 @@ createApp({
             } catch (e) { syncStatusMsg.value = '❌ 系統錯誤'; }
         };
 
-        const disconnectRoom = () => {
-            if (mqttClient) { mqttClient.end(); isConnected.value = false; syncStatusMsg.value = ''; }
-        };
+        const disconnectRoom = () => { if (mqttClient) { mqttClient.end(); isConnected.value = false; syncStatusMsg.value = ''; } };
 
         const forcePush = () => {
             if (isConnected.value && mqttClient) {
                 const safePayload = { 
-                    i: itineraryData.value, 
-                    f: foodRefs.value, 
-                    tr: transportNotes.value,
+                    i: itineraryData.value, f: foodRefs.value, tr: transportNotes.value,
                     s: shoppingItems.value.map(item => ({ t: item.text })) 
                 };
                 mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
@@ -689,9 +758,7 @@ createApp({
 
         const generateCode = () => {
             const safePayload = { 
-                i: itineraryData.value, 
-                f: foodRefs.value, 
-                tr: transportNotes.value,
+                i: itineraryData.value, f: foodRefs.value, tr: transportNotes.value,
                 s: shoppingItems.value.map(item => ({ t: item.text })) 
             };
             try {
@@ -726,16 +793,16 @@ createApp({
 
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v24_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v25_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v24_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v25_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v24_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v25_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
-                const savedT = localStorage.getItem('hokkaido_trip_v24_transport');
+                const savedT = localStorage.getItem('hokkaido_trip_v25_transport');
                 if (savedT) transportNotes.value = JSON.parse(savedT);
                 
-                const savedCover = localStorage.getItem('hokkaido_trip_v24_cover');
+                const savedCover = localStorage.getItem('hokkaido_trip_v25_cover');
                 if (savedCover) coverImage.value = savedCover;
             } catch(e) {}
             
@@ -743,16 +810,14 @@ createApp({
         });
 
         watch([itineraryData, shoppingItems, foodRefs, transportNotes], () => {
-            localStorage.setItem('hokkaido_trip_v24_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v24_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v24_foodRefs', JSON.stringify(foodRefs.value));
-            localStorage.setItem('hokkaido_trip_v24_transport', JSON.stringify(transportNotes.value));
+            localStorage.setItem('hokkaido_trip_v25_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v25_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v25_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v25_transport', JSON.stringify(transportNotes.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { 
-                    i: itineraryData.value, 
-                    f: foodRefs.value, 
-                    tr: transportNotes.value,
+                    i: itineraryData.value, f: foodRefs.value, tr: transportNotes.value,
                     s: shoppingItems.value.map(item => ({ t: item.text })) 
                 };
                 mqttClient.publish('hokkaido_app_041887', JSON.stringify(safePayload), { retain: true });
@@ -771,8 +836,6 @@ createApp({
             generatedCode, importCode, generateCode, importData,
             currentWeather,
             coverImage, triggerCoverUpload, handleCoverUpload, handleCoverError,
-            
-            // 裁切器回傳變數與函式
             showCropModal, cropImageSrc, closeCropModal, confirmCrop, rotateCropImage
         };
     }
