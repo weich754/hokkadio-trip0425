@@ -12,9 +12,12 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.5.2/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -53,6 +56,10 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .image-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }
         .sync-badge { position: absolute; top: env(safe-area-inset-top, 16px); right: 16px; z-index: 50; background: rgba(0,0,0,0.6); padding: 6px 14px; border-radius: 99px; backdrop-filter: blur(4px); cursor: pointer; border: 1px solid rgba(255,255,255,0.3); margin-top: 10px; }
+        
+        /* 裁切畫面樣式修正 */
+        .cropper-view-box, .cropper-face { border-radius: 12px; } /* 讓裁切框稍微有點圓角 */
+        .cropper-modal { background-color: rgba(0, 0, 0, 0.85); }
     </style>
 </head>
 <body>
@@ -60,9 +67,8 @@
 <div id="app" class="app-container">
     <div class="header-bg">
         <div class="header-image-container relative">
-            
             <input type="file" id="coverInput" accept="image/*" class="hidden" @change="handleCoverUpload">
-            <img :src="coverImage" class="absolute inset-0 w-full h-full object-cover">
+            <img :src="coverImage" @error="handleCoverError" class="absolute inset-0 w-full h-full object-cover" alt="北海道賞櫻封面">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-20 pointer-events-none"></div>
             
             <button @click="triggerCoverUpload" class="absolute top-4 left-4 z-30 bg-black/40 hover:bg-black/60 text-white border border-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-lg flex items-center gap-1">
@@ -264,7 +270,7 @@
                     </div>
                     <div v-else @click="triggerCamera(sIdx)" class="w-full h-[100px] bg-slate-50 rounded-xl mb-2 flex flex-col items-center justify-center text-slate-300 cursor-pointer hover:bg-slate-100 transition-colors border border-dashed border-slate-200">
                         <i class="fa-solid fa-camera text-xl mb-1"></i>
-                        <span class="text-[10px]">加入照片</span>
+                        <span class="text-[10px]">選取/拍攝</span>
                     </div>
                     
                     <div class="text-center text-sm font-bold text-slate-700 mt-auto">{{ item.text }}</div>
@@ -306,10 +312,28 @@
             </div>
         </div>
     </div>
+
+    <div v-if="showCropModal" class="fixed inset-0 bg-black z-[10000] flex flex-col animate-fade-in">
+        <div class="flex-1 relative overflow-hidden bg-black flex items-center justify-center">
+            <img id="cropTarget" :src="cropImageSrc" class="max-w-full max-h-full block opacity-0">
+        </div>
+        
+        <div class="h-24 bg-slate-900 border-t border-slate-800 flex justify-between items-center px-6 pb-[env(safe-area-inset-bottom)]">
+            <button @click="closeCropModal" class="text-slate-300 font-bold p-2 text-sm hover:text-white transition-colors">取消</button>
+            
+            <button @click="rotateCropImage" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors shadow-inner">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            
+            <button @click="confirmCrop" class="bg-sakura-pink text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-[0_0_15px_rgba(244,143,177,0.4)] flex items-center gap-2 hover:bg-pink-500 transition-colors">
+                <i class="fa-solid fa-crop-simple"></i> 完成
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
-const { createApp, ref, computed, watch, onMounted } = Vue;
+const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
 
 createApp({
     setup() {
@@ -321,36 +345,108 @@ createApp({
         const activeUploadIdx = ref(null);
         
         const enlargedImage = ref(null);
-        const coverImage = ref('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/800px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg');
+
+        // ================= 封面圖片邏輯 =================
+        const coverImage = ref('banner.jpg');
+        
+        const handleCoverError = (event) => {
+            const defaultWebImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg/800px-Goryokaku_Park_in_Hakodate_Hokkaido_Japan01bs.jpg';
+            if (event.target.src !== defaultWebImage) { event.target.src = defaultWebImage; }
+        };
         
         const triggerCoverUpload = () => { document.getElementById('coverInput').click(); };
 
-        const handleCoverUpload = (event) => {
-            const inputTarget = event.target;
-            const file = inputTarget.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1200, MAX_HEIGHT = 800; 
-                    let width = img.width, height = img.height;
-                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
-                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const base64Str = canvas.toDataURL('image/jpeg', 0.8);
-                    coverImage.value = base64Str;
-                    localStorage.setItem('hokkaido_trip_v22_cover', base64Str);
-                    inputTarget.value = ''; 
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+        // ================= 專業裁切編輯器邏輯 (Cropper.js) =================
+        const showCropModal = ref(false);
+        const cropImageSrc = ref('');
+        const currentCropType = ref(''); // 'shopping' 或 'cover'
+        let cropper = null;
+
+        const openCropper = (src, type) => {
+            cropImageSrc.value = src;
+            currentCropType.value = type;
+            showCropModal.value = true;
+            
+            nextTick(() => {
+                const imageElement = document.getElementById('cropTarget');
+                if (cropper) cropper.destroy();
+                
+                // 初始化裁切器
+                cropper = new Cropper(imageElement, {
+                    // 如果是封面照則鎖定 16:9，如果是購物清單則鎖定正方形 1:1
+                    aspectRatio: type === 'cover' ? 16 / 9 : 1,
+                    viewMode: 1, // 限制裁切框不能超出圖片邊界
+                    dragMode: 'move', // 允許使用者用手指「拖曳、平移」整張圖片
+                    autoCropArea: 0.9,
+                    restore: false,
+                    guides: true, // 顯示九宮格輔助線
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: false, // 固定裁切框，讓使用者滑動圖片 (更符合手機直覺)
+                    cropBoxResizable: false, // 禁止改變比例
+                    toggleDragModeOnDblclick: false,
+                });
+            });
         };
 
+        const rotateCropImage = () => {
+            if (cropper) cropper.rotate(90);
+        };
+
+        const confirmCrop = () => {
+            if (!cropper) return;
+            
+            // 取得裁切後的圖片 Canvas (自動壓縮寬度)
+            const canvas = cropper.getCroppedCanvas({
+                width: currentCropType.value === 'cover' ? 1200 : 800,
+                height: currentCropType.value === 'cover' ? Math.round(1200 * 9 / 16) : 800
+            });
+            
+            const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+
+            // 判斷是要存到封面還是購物清單
+            if (currentCropType.value === 'cover') {
+                coverImage.value = base64Str;
+                localStorage.setItem('hokkaido_trip_v24_cover', base64Str);
+            } else if (currentCropType.value === 'shopping' && activeUploadIdx.value !== null) {
+                shoppingItems.value[activeUploadIdx.value].image = base64Str;
+            }
+
+            closeCropModal();
+        };
+
+        const closeCropModal = () => {
+            showCropModal.value = false;
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            // 釋放記憶體中的預覽網址
+            if (cropImageSrc.value && cropImageSrc.value.startsWith('blob:')) {
+                URL.revokeObjectURL(cropImageSrc.value);
+            }
+            cropImageSrc.value = '';
+        };
+
+        // ================= 改寫上傳邏輯，將圖片送進裁切器 =================
+        const handleImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            // 建立高效能的 Blob URL 交給裁切器
+            const objectUrl = URL.createObjectURL(file);
+            openCropper(objectUrl, 'shopping');
+            event.target.value = ''; // 清空 input 確保下次可選同一張圖
+        };
+
+        const handleCoverUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const objectUrl = URL.createObjectURL(file);
+            openCropper(objectUrl, 'cover');
+            event.target.value = '';
+        };
+
+        // ================= MQTT 即時連線與備援 =================
         const showSyncModal = ref(false);
         const isConnected = ref(false);
         const syncStatusMsg = ref('');
@@ -473,30 +569,6 @@ createApp({
         const triggerCamera = (idx) => { activeUploadIdx.value = idx; document.getElementById('cameraInput').click(); };
         const removeImage = (idx) => { shoppingItems.value[idx].image = null; };
 
-        const handleImageUpload = (event) => {
-            const inputTarget = event.target;
-            const file = inputTarget.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 1000, MAX_HEIGHT = 1000;
-                    let width = img.width, height = img.height;
-                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
-                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    if (activeUploadIdx.value !== null) { shoppingItems.value[activeUploadIdx.value].image = canvas.toDataURL('image/jpeg', 0.8); }
-                    inputTarget.value = ''; 
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
         const getCategoryColor = (c) => ({ flight: 'bg-blue-500', transport: 'bg-sakura-dark', food: 'bg-sakura-pink', accommodation: 'bg-slate-600', sightseeing: 'bg-spring-green', shopping: 'bg-yellow-500' }[c]);
         const getCategoryIcon = (c) => ({ flight: 'fa-solid fa-plane', transport: 'fa-solid fa-train', food: 'fa-solid fa-utensils', accommodation: 'fa-solid fa-bed', sightseeing: 'fa-solid fa-camera', shopping: 'fa-solid fa-bag-shopping' }[c]);
 
@@ -505,7 +577,6 @@ createApp({
 
         const fetchRealWeather = async () => {
             try {
-                // 依序為：函館、洞爺湖、札幌 的經緯度
                 const urls = [
                     'https://api.open-meteo.com/v1/forecast?latitude=41.7687&longitude=140.7366&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=14', 
                     'https://api.open-meteo.com/v1/forecast?latitude=42.5448&longitude=140.825&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=14', 
@@ -533,23 +604,18 @@ createApp({
 
         const currentWeather = computed(() => {
             const fallback = { location: '更新即時氣象中...', maxT: '-', minT: '-', pop: '-', icon: 'fa-spinner', color: 'text-slate-300 animate-spin', desc: '連線中' };
-            
             if (!realWeatherData.value) return fallback;
 
-            // 0=函館, 1=洞爺湖, 2=札幌
             const locIndexMap = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2 };
             const locNames = ["函館市", "洞爺湖町", "札幌市"];
-            
             const locIdx = locIndexMap[selectedDateIndex.value];
             const cityData = realWeatherData.value[locIdx];
             if (!cityData || !cityData.daily) return fallback;
 
-            // 我們對應的行程日期
             const tripDates = ["2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03"];
             const targetDate = tripDates[selectedDateIndex.value];
             const dateIdx = cityData.daily.time.indexOf(targetDate);
 
-            // 如果 API 提供的未來 14 天內沒有這天，代表超過預測範圍
             if (dateIdx === -1) {
                 return { location: locNames[locIdx], maxT: '--', minT: '--', pop: '--', icon: 'fa-clock', color: 'text-slate-300', desc: '超過 14 天預報範圍' };
             }
@@ -568,11 +634,10 @@ createApp({
             };
         });
 
-        // ================= MQTT 即時連線 =================
+        // ================= MQTT =================
         const connectToRoom = () => {
             if (isConnected.value) return;
             syncStatusMsg.value = '連線中...';
-            
             try {
                 mqttClient = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt', { connectTimeout: 5000, reconnectPeriod: 5000 });
                 mqttClient.on('connect', () => {
@@ -661,28 +726,27 @@ createApp({
 
         onMounted(() => {
             try {
-                const savedI = localStorage.getItem('hokkaido_trip_v22_itinerary');
+                const savedI = localStorage.getItem('hokkaido_trip_v24_itinerary');
                 if (savedI) itineraryData.value = JSON.parse(savedI);
-                const savedF = localStorage.getItem('hokkaido_trip_v22_foodRefs');
+                const savedF = localStorage.getItem('hokkaido_trip_v24_foodRefs');
                 if (savedF) foodRefs.value = JSON.parse(savedF);
-                const savedS = localStorage.getItem('hokkaido_trip_v22_shopping');
+                const savedS = localStorage.getItem('hokkaido_trip_v24_shopping');
                 if (savedS) shoppingItems.value = JSON.parse(savedS);
-                const savedT = localStorage.getItem('hokkaido_trip_v22_transport');
+                const savedT = localStorage.getItem('hokkaido_trip_v24_transport');
                 if (savedT) transportNotes.value = JSON.parse(savedT);
                 
-                const savedCover = localStorage.getItem('hokkaido_trip_v22_cover');
+                const savedCover = localStorage.getItem('hokkaido_trip_v24_cover');
                 if (savedCover) coverImage.value = savedCover;
             } catch(e) {}
             
-            // 進入網頁自動抓取真實天氣
             fetchRealWeather();
         });
 
         watch([itineraryData, shoppingItems, foodRefs, transportNotes], () => {
-            localStorage.setItem('hokkaido_trip_v22_itinerary', JSON.stringify(itineraryData.value));
-            localStorage.setItem('hokkaido_trip_v22_shopping', JSON.stringify(shoppingItems.value));
-            localStorage.setItem('hokkaido_trip_v22_foodRefs', JSON.stringify(foodRefs.value));
-            localStorage.setItem('hokkaido_trip_v22_transport', JSON.stringify(transportNotes.value));
+            localStorage.setItem('hokkaido_trip_v24_itinerary', JSON.stringify(itineraryData.value));
+            localStorage.setItem('hokkaido_trip_v24_shopping', JSON.stringify(shoppingItems.value));
+            localStorage.setItem('hokkaido_trip_v24_foodRefs', JSON.stringify(foodRefs.value));
+            localStorage.setItem('hokkaido_trip_v24_transport', JSON.stringify(transportNotes.value));
 
             if (isConnected.value && mqttClient && !isReceivingUpdate) {
                 const safePayload = { 
@@ -706,7 +770,10 @@ createApp({
             connectToRoom, disconnectRoom, forcePush,
             generatedCode, importCode, generateCode, importData,
             currentWeather,
-            coverImage, triggerCoverUpload, handleCoverUpload
+            coverImage, triggerCoverUpload, handleCoverUpload, handleCoverError,
+            
+            // 裁切器回傳變數與函式
+            showCropModal, cropImageSrc, closeCropModal, confirmCrop, rotateCropImage
         };
     }
 }).mount('#app');
